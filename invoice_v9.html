@@ -1,0 +1,3691 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Счетовод — ООО «ПАТРОНУС»</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237E9A8C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'></path><polyline points='14 2 14 8 20 8'></polyline><line x1='16' y1='13' x2='8' y2='13'></line><line x1='16' y1='17' x2='8' y2='17'></line><polyline points='10 9 9 9 8 9'></polyline></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* ===== DESIGN TOKENS ===== */
+        :root {
+            --bg: #F3F2ED;
+            --bg-subtle: #EAE8E1;
+            --surface: #ffffff;
+            --glass: rgba(255,255,255,0.72);
+            --glass-strong: rgba(255,255,255,0.9);
+            --text: #1B2A2E;
+            --text-secondary: #5A6B67;
+            --text-muted: #94A19D;
+            --border: rgba(27,42,46,0.09);
+            --border-strong: rgba(27,42,46,0.15);
+            --accent: #7E9A8C;
+            --accent-hover: #6C8B7B;
+            --accent-light: #DEE7E0;
+            --accent-glow: rgba(126,154,140,0.18);
+            --accent-ink: #3D5548;
+            --success: #7E9A8C;
+            --success-hover: #6C8B7B;
+            --success-light: #DEE7E0;
+            --danger: #B5504A;
+            --danger-hover: #9C4640;
+            --danger-light: #FBEAEA;
+            --shadow-xs: 0 1px 2px rgba(27,42,46,0.03);
+            --shadow-sm: 0 1px 3px rgba(27,42,46,0.04), 0 1px 2px rgba(27,42,46,0.03);
+            --shadow-md: 0 4px 8px -1px rgba(27,42,46,0.06), 0 2px 4px -2px rgba(27,42,46,0.03);
+            --shadow-lg: 0 12px 24px -4px rgba(27,42,46,0.1), 0 4px 8px -2px rgba(27,42,46,0.03);
+            --shadow-xl: 0 24px 40px -4px rgba(27,42,46,0.12), 0 8px 16px -4px rgba(27,42,46,0.04);
+            --elevation-0: none;
+            --elevation-1: 0 1px 3px rgba(27,42,46,0.04), 0 12px 32px -16px rgba(27,42,46,0.12);
+            --elevation-2: 0 1px 3px rgba(27,42,46,0.05), 0 16px 36px -14px rgba(27,42,46,0.16);
+            --elevation-3: 0 2px 6px rgba(27,42,46,0.06), 0 20px 40px -14px rgba(27,42,46,0.18);
+            --elevation-4: 0 1px 2px rgba(27,42,46,0.05), 0 24px 48px -12px rgba(27,42,46,0.22);
+            --radius: 20px;
+            --radius-lg: 28px;
+            --radius-sm: 12px;
+            --input-h: 44px;
+            --btn-h: 44px;
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+            --spacing-2xl: 24px;
+            --spacing-3xl: 32px;
+            --spacing-4xl: 40px;
+            --spacing-5xl: 48px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            font-size: 14.5px;
+            font-variant-numeric: tabular-nums;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(126,154,140,0.10), transparent 45%),
+                radial-gradient(circle at 85% 75%, rgba(126,154,140,0.08), transparent 50%);
+        }
+
+        .serif { font-family: 'Lora', serif; }
+        .mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+        .nav {
+            background: rgba(243,242,237,0.8);
+            backdrop-filter: blur(16px) saturate(160%);
+            -webkit-backdrop-filter: blur(16px) saturate(160%);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            height: 76px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 8px;
+        }
+
+        .nav-brand {
+            font-family: 'Lora', serif;
+            font-size: 19px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            letter-spacing: -0.01em;
+        }
+
+        .nav-brand-icon {
+            width: 34px;
+            height: 34px;
+            background: var(--text);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .nav-brand:hover .nav-brand-icon { transform: scale(1.05); }
+
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            margin-left: 44px;
+        }
+
+        .nav-tab {
+            padding: 9px 18px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 999px;
+            transition: all 0.15s ease;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            height: auto;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-tab:hover:not(.active) { background: rgba(27,42,46,0.06); color: var(--text); }
+        .nav-tab.active { background: var(--text); color: var(--surface); box-shadow: none; font-weight: 500; }
+
+        .nav-hint {
+            margin-left: auto;
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            padding: var(--spacing-xs) var(--spacing-md);
+            background: var(--surface);
+            border-radius: 999px;
+            border: 1px solid var(--border-strong);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-hint kbd {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 18px;
+            padding: 0 4px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-strong);
+            border-radius: 4px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.625rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            box-shadow: none;
+            line-height: 1;
+        }
+
+        .nav-help-btn {
+            margin-left: var(--spacing-sm);
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            border-radius: 999px;
+            border: 1px solid var(--border-strong);
+            background: var(--surface);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .nav-help-btn:hover {
+            background: var(--accent-light);
+            color: var(--accent-ink);
+            border-color: var(--accent);
+        }
+
+        .nav-help-btn:active { transform: scale(0.94); }
+
+        .container {
+            max-width: 1520px;
+            margin: 0 auto;
+            padding: 48px 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page { display: none; }
+        .page.active { display: block; animation: pageIn 0.3s ease; }
+
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-hero {
+            margin-bottom: 32px;
+            max-width: 640px;
+        }
+
+        .page-hero h1 {
+            font-family: 'Lora', serif;
+            font-weight: 600;
+            font-size: 32px;
+            letter-spacing: -0.01em;
+            line-height: 1.15;
+            margin-bottom: 6px;
+        }
+
+        .page-hero h1 em {
+            font-style: italic;
+            color: var(--accent-ink);
+            font-weight: 500;
+        }
+
+        .page-hero-sub {
+            color: var(--text-secondary);
+            font-size: 14.5px;
+            font-weight: 500;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.55fr;
+            gap: var(--spacing-2xl);
+            align-items: start;
+            transition: grid-template-columns 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .form-grid.preview-collapsed {
+            grid-template-columns: 1fr 0fr;
+            gap: 0;
+        }
+
+        .form-grid.preview-collapsed .preview-section {
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            min-width: 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: var(--spacing-xl);
+            min-width: 0;
+        }
+
+        .form-group:last-child { margin-bottom: 0; }
+
+        .form-group label {
+            font-weight: 500;
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            height: var(--input-h);
+            padding: 0 14px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            line-height: 1.4;
+            transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+            background: var(--surface);
+            color: var(--text);
+            width: 100%;
+            min-width: 0;
+            box-shadow: none;
+        }
+
+        .form-group textarea {
+            height: auto;
+            min-height: 72px;
+            padding: var(--spacing-md);
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .form-group select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A19D' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-group input:hover,
+        .form-group select:hover,
+        .form-group textarea:hover {
+            border-color: var(--text-muted);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .form-group input:disabled,
+        .form-group select:disabled,
+        .form-group textarea:disabled {
+            background: var(--bg-subtle);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .form-group input[readonly],
+        .form-group textarea[readonly] {
+            background: var(--bg);
+            color: var(--text-secondary);
+        }
+
+        .form-group .field-error {
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 3px rgba(181,80,74,0.12) !important;
+        }
+
+        .form-group .field-error-text {
+            font-size: 0.75rem;
+            color: var(--danger);
+            margin-top: 2px;
+        }
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg); }
+        .form-inline { display: flex; gap: var(--spacing-sm); align-items: end; }
+        .form-inline .form-group { flex: 1; margin-bottom: 0; }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            padding: 26px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            box-shadow: var(--elevation-1);
+            margin-bottom: 22px;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+            animation: cardIn 0.35s ease backwards;
+            overflow: hidden;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.04s; }
+        .card:nth-child(2) { animation-delay: 0.08s; }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card:hover { box-shadow: var(--elevation-2); }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 0;
+            border-bottom: none;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .card-header h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 12.5px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .card-header h3::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .positions-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .position-card {
+            background: rgba(255,255,255,0.5);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-lg);
+            transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+            animation: cardSlideIn 0.25s ease backwards;
+            position: relative;
+        }
+
+        @keyframes cardSlideIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .position-card:hover {
+            border-color: var(--border-strong);
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .position-card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .position-number {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-light);
+            color: var(--accent-ink);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.6875rem;
+            flex-shrink: 0;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .position-card-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            flex: 1;
+        }
+
+        .position-delete {
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+
+        .position-delete:hover {
+            background: var(--danger-light);
+            border-color: transparent;
+            color: var(--danger);
+        }
+
+        .position-name-group { margin-bottom: var(--spacing-md); }
+
+        .position-name-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .position-name-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            background: var(--surface);
+            color: var(--text);
+            resize: vertical;
+            min-height: 60px;
+            line-height: 1.5;
+            transition: border-color 0.12s ease, box-shadow 0.12s ease;
+            box-sizing: border-box;
+        }
+
+        .position-name-group textarea:hover { border-color: var(--text-muted); }
+        .position-name-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .position-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.2fr;
+            gap: var(--spacing-md);
+        }
+
+        .position-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .position-field label {
+            font-size: 0.6875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+        }
+
+        .position-field input {
+            width: 100%;
+            height: 40px;
+            padding: 0 var(--spacing-sm);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-family: 'Inter', sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            transition: border-color 0.12s ease, box-shadow 0.12s ease;
+            text-align: center;
+            font-weight: 500;
+            box-sizing: border-box;
+        }
+
+        .position-field input:hover { border-color: var(--text-muted); }
+        .position-field input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .position-field.price-field input { font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: var(--accent-ink); }
+
+        .position-field.sum-field {
+            background: var(--accent-light);
+            border: 1px solid rgba(126,154,140,0.25);
+            border-radius: 10px;
+            padding: var(--spacing-sm) var(--spacing-md);
+        }
+
+        .position-field.sum-field label { color: var(--accent-ink); font-weight: 600; }
+        .position-field.sum-field input {
+            background: transparent;
+            border: none;
+            height: auto;
+            padding: 2px 0;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-ink);
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .position-field.sum-field input:focus { box-shadow: none; }
+
+        .btn {
+            height: var(--btn-h);
+            padding: 0 20px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background: var(--text);
+            color: var(--surface);
+            border-color: var(--text);
+            box-shadow: none;
+        }
+        .btn-primary:hover {
+            background: #0F1B1E;
+            border-color: #0F1B1E;
+            transform: translateY(-1px);
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border-color: var(--border-strong);
+            box-shadow: none;
+        }
+        .btn-secondary:hover {
+            border-color: var(--text-secondary);
+            background: #FAFAF7;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+            box-shadow: none;
+        }
+        .btn-danger:hover {
+            background: var(--danger-hover);
+            border-color: var(--danger-hover);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: transparent;
+            height: 32px;
+            padding: 0 var(--spacing-sm);
+            border-radius: var(--radius-sm);
+        }
+        .btn-ghost:hover { background: rgba(27,42,46,0.06); color: var(--text); }
+        .btn-ghost.btn-danger:hover { background: var(--danger-light); color: var(--danger); }
+
+        .btn-sm { height: 38px; padding: 0 var(--spacing-md); font-size: 13px; }
+        .btn-xs { height: 28px; padding: 0 6px; font-size: 0.75rem; border-radius: 999px; }
+
+        .actions-bar {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+            margin-top: var(--spacing-2xl);
+            padding-top: var(--spacing-xl);
+            border-top: 1px solid var(--border);
+        }
+
+        .actions-bar .btn-group {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .actions-bar .btn-separator {
+            width: 1px;
+            background: var(--border);
+            align-self: stretch;
+            margin: 0 var(--spacing-xs);
+        }
+
+        .preview-section {
+            background: var(--glass-strong);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--elevation-1);
+            overflow: hidden;
+            position: sticky;
+            top: 112px;
+            animation: previewIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.1s backwards;
+            transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: opacity;
+        }
+
+        @keyframes previewIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .preview-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-header-label {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-header-label i { display: none; }
+
+        .preview-header-label::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: inline-block;
+        }
+
+        .preview-toggle {
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            height: 30px;
+            width: 30px;
+            padding: 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+            flex-shrink: 0;
+            box-shadow: none;
+        }
+
+        .preview-toggle:hover {
+            background: var(--surface);
+            color: var(--text);
+            border-color: var(--text-secondary);
+        }
+
+        .preview-toggle:active {
+            transform: scale(0.92);
+            box-shadow: none;
+        }
+
+        .preview-toggle-icon {
+            width: 15px;
+            height: 15px;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .form-grid.preview-collapsed .preview-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .preview-toggle-text {
+            display: none;
+        }
+
+        .preview-sidebar-tab {
+            position: fixed;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 50;
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            padding: 14px 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            box-shadow: -2px 0 8px rgba(27,42,46,0.06);
+            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-50%) translateX(100%);
+        }
+
+        .preview-sidebar-tab.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .preview-sidebar-tab:hover {
+            background: var(--accent-light);
+            border-color: rgba(126,154,140,0.35);
+            box-shadow: -2px 0 12px rgba(126,154,140,0.15);
+            padding-right: 10px;
+        }
+
+        .preview-sidebar-tab-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
+            transition: color 0.2s ease, transform 0.3s ease;
+        }
+
+        .preview-sidebar-tab:hover .preview-sidebar-tab-icon {
+            color: var(--accent-ink);
+            transform: translateX(-2px);
+        }
+
+        .preview-sidebar-tab-text {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            transition: color 0.2s ease;
+        }
+
+        .preview-sidebar-tab:hover .preview-sidebar-tab-text {
+            color: var(--accent-ink);
+        }
+
+        .preview-content {
+            padding: 16px 24px 24px;
+            overflow: auto;
+            max-height: calc(100vh - 190px);
+            background: transparent;
+        }
+
+        .invoice-preview {
+            background: white;
+            padding: 12mm 14mm;
+            max-width: 210mm;
+            margin: 0 auto;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10.5pt;
+            color: black;
+            line-height: 1.25;
+            box-shadow: 0 1px 2px rgba(27,42,46,0.03), 0 20px 40px -20px rgba(27,42,46,0.25);
+            border-radius: 8px;
+            transition: box-shadow 0.25s ease, transform 0.25s ease;
+        }
+
+        .invoice-preview:hover {
+            box-shadow: 0 4px 12px rgba(15,17,21,0.08), 0 16px 40px rgba(15,17,21,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+            transform: translateY(-1px);
+        }
+
+        .invoice-title { text-align: left; font-size: 14pt; font-weight: bold; margin: 0 0 10px 0; }
+
+        .bank-block { border: 1px solid black; margin-bottom: 10px; font-size: 9.5pt; line-height: 1.3; }
+        .bank-block table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .bank-block col.bc-label { width: 18%; }
+        .bank-block col.bc-value { width: 32%; }
+        .bank-block td {
+            padding: 3px 5px;
+            vertical-align: middle;
+            border: 1px solid black;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        .bank-block .bl { font-weight: normal; }
+        .bank-block .bv { font-weight: bold; }
+        .bank-block .bacc { font-weight: bold; }
+
+        .parties-block { margin-bottom: 8px; }
+        .party-row { display: flex; margin-bottom: 4px; font-size: 9.5pt; line-height: 1.3; }
+        .party-label { font-weight: normal; min-width: 150px; flex-shrink: 0; }
+        .party-value { flex: 1; min-width: 0; font-weight: bold; }
+        .basis-block { margin-bottom: 8px; font-size: 9.5pt; }
+
+        .invoice-table-wrap {
+            border: 2px solid black;
+            margin-bottom: 8px;
+        }
+
+        .invoice-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; table-layout: fixed; }
+        .invoice-table th, .invoice-table td { border: 1px solid black; padding: 4px 6px; word-wrap: break-word; overflow-wrap: break-word; }
+        .invoice-table th { font-weight: bold; text-align: center; background: #f0f0f0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+        .invoice-table td { vertical-align: top; }
+        .invoice-totals { text-align: right; margin-bottom: 8px; font-size: 9.5pt; }
+        .invoice-totals p { margin: 2px 0; }
+        .total-line { font-weight: bold; font-size: 11pt; border-top: 1px solid black; padding-top: 4px; margin-top: 4px; }
+        .invoice-words { margin: 8px 0; padding: 4px 0; font-size: 9.5pt; }
+        .invoice-signatures { display: flex; justify-content: space-between; margin-top: 18px; font-size: 9.5pt; page-break-inside: avoid; }
+        .signature-block { width: 48%; }
+        .signature-label { margin-bottom: 2px; }
+        .signature-line { display: flex; align-items: center; gap: 6px; margin-top: 22px; }
+        .signature-dash { flex: 1; border-bottom: 1px solid black; min-width: 80px; }
+        .signature-name { white-space: nowrap; }
+
+        .journal-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+
+        .journal-table th, .journal-table td {
+            padding: 14px var(--spacing-lg);
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        .journal-table th {
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-strong);
+        }
+
+        .journal-table tbody tr {
+            transition: background 0.12s ease, box-shadow 0.12s ease;
+            cursor: pointer;
+        }
+        .journal-table tbody tr:hover td {
+            background: rgba(126,154,140,0.06);
+        }
+
+        .journal-table td:last-child { cursor: default; }
+
+        .journal-summary {
+            display: flex;
+            gap: var(--spacing-2xl);
+            padding: var(--spacing-lg) var(--spacing-xl);
+            background: var(--accent-light);
+            border: 1px solid rgba(126,154,140,0.2);
+            border-radius: var(--radius-sm);
+            margin-top: var(--spacing-md);
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        .journal-summary strong { color: var(--accent-ink); font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+
+        .filter-bar { display: flex; gap: var(--spacing-lg); margin-bottom: var(--spacing-2xl); flex-wrap: wrap; align-items: end; }
+        .filter-bar .form-group { margin-bottom: 0; min-width: 180px; }
+
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-2xl); }
+
+        .settings-section {
+            background: var(--glass);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid var(--border-strong);
+            padding: 26px;
+            border-radius: var(--radius);
+            box-shadow: var(--elevation-1);
+            margin-bottom: var(--spacing-xl);
+            transition: box-shadow 0.2s ease;
+            animation: cardIn 0.35s ease backwards;
+        }
+
+        .settings-section:nth-child(1) { animation-delay: 0.04s; }
+        .settings-section:nth-child(2) { animation-delay: 0.08s; }
+        .settings-section:nth-child(3) { animation-delay: 0.12s; }
+        .settings-section:nth-child(4) { animation-delay: 0.16s; }
+
+        .settings-section:hover { box-shadow: var(--elevation-2); }
+
+        .settings-section h3 {
+            font-family: 'Lora', serif;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .settings-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: var(--spacing-sm); }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(27,42,46,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: var(--spacing-lg);
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--elevation-4);
+            animation: modalIn 0.25s ease;
+            border: 1px solid var(--border-strong);
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.97) translateY(4px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            padding: var(--spacing-xl) var(--spacing-2xl);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 { font-family: 'Lora', serif; font-size: 17px; font-weight: 600; }
+
+        .modal-close {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            transition: all 0.12s ease;
+            font-size: 18px;
+            font-family: 'Inter', sans-serif;
+            line-height: 1;
+        }
+
+        .modal-close:hover { background: var(--danger-light); color: var(--danger); border-color: transparent; }
+
+        .modal-body { padding: var(--spacing-2xl); }
+        .modal-body .form-group { margin-bottom: var(--spacing-xl); }
+
+        .modal-footer {
+            padding: var(--spacing-lg) var(--spacing-2xl);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-sm);
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: var(--spacing-xl);
+            right: var(--spacing-xl);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .toast {
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: 999px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            box-shadow: var(--shadow-lg), 0 0 0 1px rgba(27,42,46,0.05);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            animation: toastIn 0.25s ease;
+            transition: transform 0.12s ease;
+        }
+
+        .toast:hover { transform: translateX(-4px); }
+        .toast.success { background: var(--accent-ink); }
+        .toast.error { background: var(--danger); }
+        .toast.info { background: var(--text); }
+        .toast.removing { animation: toastOut 0.2s ease forwards; }
+
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastOut { to { transform: translateX(100%); opacity: 0; } }
+
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            flex-shrink: 0;
+            padding: 0;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-light);
+            color: var(--accent-ink);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.9);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: var(--bg-subtle);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .empty-state { text-align: center; padding: var(--spacing-5xl) var(--spacing-lg); color: var(--text-muted); }
+        .empty-state-icon { margin-bottom: var(--spacing-xl); display: flex; justify-content: center; }
+        .empty-state-icon svg, .empty-state-icon i { opacity: 0.25; }
+        .empty-state-text { font-family: 'Lora', serif; font-size: 1rem; font-weight: 600; color: var(--text-secondary); margin-bottom: var(--spacing-sm); }
+        .empty-state-hint { font-size: 0.8125rem; color: var(--text-muted); margin-bottom: var(--spacing-xl); }
+
+        @media print {
+            @page { size: A4 portrait; margin: 10mm 12mm; }
+            html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+            /* ВАЖНО: visibility:hidden НЕ убирает элемент из потока документа —
+               он остаётся на своём месте и занимает высоту (в данном случае —
+               высоту всей формы/интерфейса, которая гораздо больше одного
+               листа A4). Из-за этого появлялась вторая, полностью пустая,
+               чуть серая от фона body страница. display:none реально убирает
+               элемент из layout, поэтому используем его вместо visibility. */
+            body > *:not(#printArea) { display: none !important; }
+            html, body { height: auto !important; min-height: 0 !important; background: #fff !important; }
+            #printArea, #printArea * { visibility: visible !important; }
+            #printArea { display: block !important; position: static !important; width: 100%; }
+
+            /* Печать всегда использует те же компактные размеры, что и экран —
+               никакого отдельного/более крупного шрифта для печати, чтобы
+               высота документа не "плыла" между экраном и печатной формой. */
+            .invoice-preview {
+                padding: 0 !important;
+                max-width: none !important;
+                width: 100% !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                font-size: 10.5pt !important;
+                line-height: 1.25 !important;
+            }
+            .invoice-title { font-size: 14pt !important; }
+            .bank-block { font-size: 9.5pt !important; }
+            .party-row { font-size: 9.5pt !important; }
+            .basis-block { font-size: 9.5pt !important; }
+            .invoice-table { font-size: 9.5pt !important; }
+            .invoice-totals { font-size: 9.5pt !important; }
+            .total-line { font-size: 11pt !important; }
+            .invoice-words { font-size: 9.5pt !important; }
+            .invoice-signatures { font-size: 9.5pt !important; }
+
+            .invoice-table th,
+            .invoice-table th * {
+                background: #f0f0f0 !important;
+                background-color: #f0f0f0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            .invoice-table-wrap, .invoice-table tr { page-break-inside: avoid; }
+            .invoice-signatures, .invoice-words, .bank-block, .parties-block { page-break-inside: avoid; }
+        }
+
+        @media screen and (max-width: 1024px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .preview-section { position: static; }
+            .settings-grid { grid-template-columns: 1fr; }
+            .container { padding: var(--spacing-xl); }
+            .preview-sidebar-tab { display: none; }
+        }
+
+        @media screen and (max-width: 640px) {
+            .nav { padding: 0 var(--spacing-lg); gap: var(--spacing-sm); height: 60px; }
+            .nav-brand { font-size: 1rem; gap: var(--spacing-sm); }
+            .nav-brand-icon { width: 28px; height: 28px; border-radius: 8px; }
+            .nav-brand-icon i { width: 14px !important; height: 14px !important; }
+            .nav-tabs { margin-left: var(--spacing-md); }
+            .nav-tab { padding: 0 var(--spacing-md); font-size: 0.75rem; height: 32px; }
+            .nav-hint { display: none; }
+            .nav-help-btn { margin-left: auto; width: 30px; height: 30px; }
+            .container { padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-xl); }
+            .page-hero h1 { font-size: 26px; }
+
+            .form-row { grid-template-columns: 1fr; }
+            .form-inline { flex-direction: column; align-items: stretch; }
+            .form-inline .btn { width: 100%; }
+
+            .position-fields { grid-template-columns: 1fr 1fr; gap: var(--spacing-sm); }
+
+            .party-row { flex-direction: column; gap: 4px; }
+            .party-label { min-width: auto; }
+
+            .actions-bar { flex-direction: column; }
+            .actions-bar .btn { width: 100%; }
+            .actions-bar .btn-separator { display: none; }
+            .actions-bar .btn-group { flex-direction: column; width: 100%; }
+            .actions-bar .btn-group .btn { width: 100%; }
+
+            .modal { margin: var(--spacing-sm); max-height: 95vh; }
+            .modal-header { padding: var(--spacing-lg); }
+            .modal-body { padding: var(--spacing-lg); }
+            .modal-footer { padding: var(--spacing-md); flex-direction: column; }
+            .modal-footer .btn { width: 100%; }
+
+            .journal-table th:nth-child(5),
+            .journal-table td:nth-child(5) { display: none; }
+
+            .invoice-preview { padding: 8mm 10mm; font-size: 8pt; }
+
+            .toast-container { left: var(--spacing-lg); right: var(--spacing-lg); bottom: var(--spacing-lg); }
+            .toast { width: 100%; }
+        }
+
+        @media screen and (max-width: 400px) {
+            .nav-brand span { display: none; }
+            .nav-tab { padding: 0 var(--spacing-sm); font-size: 0.6875rem; }
+
+            .position-fields { grid-template-columns: 1fr; }
+
+            .card { padding: var(--spacing-lg); }
+            .position-card { padding: var(--spacing-lg); }
+
+            .invoice-preview { padding: 5mm 8mm; font-size: 7pt; }
+            .invoice-preview .party-label { min-width: auto; }
+            .invoice-preview .party-row { flex-direction: column; gap: 0; }
+        }
+
+        /* ===== СТАТУСЫ СЧЕТОВ ===== */
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: none;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: filter 0.15s ease, transform 0.1s ease;
+            white-space: nowrap;
+        }
+
+        .status-badge:hover { filter: brightness(0.96); }
+        .status-badge:active { transform: scale(0.97); }
+        .status-badge svg { opacity: 0.6; }
+
+        .status-popover {
+            position: fixed;
+            z-index: 1500;
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--elevation-3);
+            padding: 6px;
+            width: 170px;
+            animation: modalIn 0.15s ease;
+        }
+
+        .status-popover-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 0.12s ease;
+        }
+
+        .status-popover-item:hover { background: var(--bg-subtle); }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ===== ДАШБОРД ЖУРНАЛА ===== */
+
+        .journal-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--spacing-md);
+            margin: var(--spacing-lg) 0 var(--spacing-xl);
+        }
+
+        .journal-metric-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            padding: var(--spacing-lg);
+            animation: cardIn 0.35s ease backwards;
+        }
+
+        .journal-metric-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .journal-metric-value {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .journal-metric-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .journal-chart {
+            grid-column: 1 / -1;
+            background: var(--glass);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            padding: var(--spacing-lg);
+            animation: cardIn 0.35s ease backwards;
+        }
+
+        .journal-chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: var(--spacing-md);
+            height: 90px;
+            margin-top: var(--spacing-md);
+        }
+
+        .journal-chart-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .journal-chart-bar-track {
+            width: 100%;
+            height: 70px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .journal-chart-bar {
+            width: 100%;
+            background: var(--accent);
+            border-radius: 5px 5px 0 0;
+            min-height: 3px;
+            transition: height 0.3s ease;
+        }
+
+        .journal-chart-month {
+            font-size: 10.5px;
+            color: var(--text-muted);
+        }
+
+        @media screen and (max-width: 640px) {
+            .journal-dashboard { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* ===== ОНБОРДИНГ-ТУР ===== */
+
+        .tour-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            background: rgba(27,42,46,0.55);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tour-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .tour-spotlight {
+            position: fixed;
+            z-index: 3001;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 0 0 4px rgba(255,255,255,0.9), 0 0 0 9999px rgba(27,42,46,0.55);
+            pointer-events: none;
+            opacity: 0;
+            transition: top 0.45s cubic-bezier(0.4, 0, 0.2, 1), left 0.45s cubic-bezier(0.4, 0, 0.2, 1), width 0.45s cubic-bezier(0.4, 0, 0.2, 1), height 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tour-spotlight.active { opacity: 1; }
+
+        .tour-spotlight.center {
+            top: 50% !important;
+            left: 50% !important;
+            width: 0 !important;
+            height: 0 !important;
+            box-shadow: 0 0 0 9999px rgba(27,42,46,0.55);
+        }
+
+        .tour-card {
+            position: fixed;
+            z-index: 3002;
+            width: 340px;
+            max-width: calc(100vw - 32px);
+            background: var(--glass-strong);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            box-shadow: var(--elevation-4);
+            padding: var(--spacing-xl) var(--spacing-2xl);
+            opacity: 0;
+            transform: translateY(10px) scale(0.97);
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.34, 1.15, 0.64, 1), top 0.45s cubic-bezier(0.4, 0, 0.2, 1), left 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tour-card.active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+
+        .tour-card.center {
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) scale(1) !important;
+        }
+
+        .tour-card.center:not(.active) { transform: translate(-50%, -50%) scale(0.98) !important; }
+
+        .tour-card-eyebrow {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--accent-ink);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .tour-card-title {
+            font-family: 'Lora', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: var(--spacing-sm);
+            letter-spacing: -0.01em;
+        }
+
+        .tour-card-text {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .tour-card-progress {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .tour-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border-strong);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .tour-dot.done { background: var(--accent); }
+        .tour-dot.current { background: var(--accent-ink); transform: scale(1.35); }
+
+        .tour-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--spacing-sm);
+        }
+
+        .tour-card-footer-left { display: flex; gap: var(--spacing-sm); }
+
+        .tour-skip {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            padding: 6px 4px;
+            transition: color 0.15s ease;
+        }
+
+        .tour-skip:hover { color: var(--danger); }
+
+        .tour-card .btn { height: 36px; padding: 0 var(--spacing-lg); font-size: 13px; }
+
+        @media screen and (max-width: 640px) {
+            .tour-card {
+                width: auto;
+                left: var(--spacing-lg) !important;
+                right: var(--spacing-lg);
+                bottom: var(--spacing-lg) !important;
+                top: auto !important;
+                transform: translateY(12px) !important;
+                max-width: none;
+            }
+            .tour-card.active { transform: translateY(0) !important; }
+            .tour-card.center { left: var(--spacing-lg) !important; transform: translateY(12px) !important; }
+            .tour-card.center.active { transform: translateY(0) !important; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-brand">
+            <div class="nav-brand-icon"><i data-lucide="file-text" style="width:16px;height:16px;color:white;"></i></div>
+            Счетовод
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-page="new-invoice">Новый счёт</button>
+            <button class="nav-tab" data-page="journal">Журнал счетов</button>
+            <button class="nav-tab" data-page="settings">Настройки</button>
+        </div>
+        <div class="nav-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> сохранить · <kbd>Ctrl</kbd>+<kbd>P</kbd> печать · <kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>P</kbd> превью</div>
+        <button class="nav-help-btn" onclick="startTour(true)" title="Показать обучающий тур">
+            <i data-lucide="help-circle" style="width:18px;height:18px;"></i>
+        </button>
+    </nav>
+
+    <div class="container">
+        <div id="new-invoice" class="page active">
+            <div class="page-hero">
+                <h1>Счёт на оплату <em>за минуту.</em></h1>
+                <div class="page-hero-sub">Заполните данные слева — документ соберётся справа</div>
+            </div>
+            <div class="form-grid">
+                <div>
+                    <div class="card">
+                        <div class="card-header"><h3>Основные данные</h3></div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="invoiceNumber">Номер счёта</label>
+                                <input type="number" id="invoiceNumber" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="invoiceDate">Дата счёта</label>
+                                <input type="date" id="invoiceDate">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="counterparty">Покупатель (Заказчик)</label>
+                            <div class="form-inline">
+                                <select id="counterparty">
+                                    <option value="">— Выберите покупателя —</option>
+                                </select>
+                                <button class="btn btn-sm btn-secondary" onclick="openCounterpartyModal()" title="Добавить нового покупателя"><i data-lucide="user-plus" style="width:14px;height:14px;"></i> Добавить</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="basis">Основание (договор)</label>
+                            <input type="text" id="basis" list="basisList" placeholder="номер и дата договора, напр. 05-КУ/2018 от 01.11.2019 г." autocomplete="off">
+                            <datalist id="basisList"></datalist>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signer">Подписант покупателя</label>
+                            <input type="text" id="signer" placeholder="ФИО представителя, напр. Ландихова Н.А.">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="serviceMonth">Месяц оказания услуг</label>
+                                <select id="serviceMonth">
+                                    <option value="1">Январь</option>
+                                    <option value="2">Февраль</option>
+                                    <option value="3">Март</option>
+                                    <option value="4">Апрель</option>
+                                    <option value="5">Май</option>
+                                    <option value="6">Июнь</option>
+                                    <option value="7">Июль</option>
+                                    <option value="8">Август</option>
+                                    <option value="9">Сентябрь</option>
+                                    <option value="10">Октябрь</option>
+                                    <option value="11">Ноябрь</option>
+                                    <option value="12">Декабрь</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="serviceYear">Год оказания услуг</label>
+                                <input type="number" id="serviceYear" min="2020" max="2099">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vatType">НДС</label>
+                            <select id="vatType">
+                                <option value="none">Без НДС</option>
+                                <option value="20">С НДС 20%</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding: 2rem;">
+                        <div class="progress-bar" id="progressBar"><div class="progress-bar-fill" id="progressFill" style="width: 0%"></div></div>
+                        <div class="card-header" style="margin-bottom: 1.75rem; padding-bottom: 1.25rem;">
+                            <div>
+                                <h3 style="margin-bottom: 0.25rem;">Позиции счёта</h3>
+                                <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">Добавьте услуги и укажите стоимость</p>
+                            </div>
+                            <button class="btn btn-secondary" onclick="addPosition()" title="Добавить ещё одну позицию в счёт">
+                                <i data-lucide="plus" style="width:16px;height:16px;"></i> Добавить позицию
+                            </button>
+                        </div>
+
+                        <div id="positionsBody" class="positions-list"></div>
+
+                        <div class="actions-bar" style="flex-direction: column; gap: var(--spacing-sm);">
+                            <button class="btn btn-primary" onclick="saveAndContinue()" title="Сохранить счёт в журнал (Ctrl+Enter)" style="width: 100%;">
+                                <i data-lucide="save" style="width:16px;height:16px;"></i> Сохранить и продолжить
+                            </button>
+                            <div style="display: flex; gap: var(--spacing-sm);">
+                                <button class="btn btn-secondary" onclick="printInvoice()" title="Печать счёта (Ctrl+P)" style="flex: 1;">
+                                    <i data-lucide="printer" style="width:16px;height:16px;"></i> Печать
+                                </button>
+                                <button class="btn btn-secondary" onclick="downloadPDF()" title="Скачать счёт в формате PDF" style="flex: 1;">
+                                    <i data-lucide="file-text" style="width:16px;height:16px;"></i> PDF
+                                </button>
+                                <button class="btn btn-secondary" onclick="downloadExcel()" title="Скачать счёт в формате Excel" style="flex: 1;">
+                                    <i data-lucide="table" style="width:16px;height:16px;"></i> Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-section">
+                    <div class="preview-header">
+                        <span class="preview-header-label"><i data-lucide="eye" style="width:14px;height:14px;"></i> Предварительный просмотр</span>
+                        <button class="preview-toggle" onclick="togglePreview()" title="Свернуть превью (Ctrl+Shift+P)">
+                            <svg class="preview-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                    </div>
+                    <div class="preview-content">
+                        <div id="invoicePreview" class="invoice-preview"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="journal" class="page">
+            <div class="page-hero">
+                <h1>Журнал <em>счетов.</em></h1>
+                <div class="page-hero-sub">Все выставленные счета в одном месте</div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Журнал счетов</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="exportJournalToExcel()" title="Скачать весь журнал в Excel"><i data-lucide="download" style="width:14px;height:14px;"></i> Экспорт в Excel</button>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="form-group">
+                        <label>Поиск</label>
+                        <input type="text" id="journalSearch" list="journalCounterpartyList" placeholder="Номер, покупатель..." oninput="filterJournal()" autocomplete="off">
+                        <datalist id="journalCounterpartyList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Дата от</label>
+                        <input type="date" id="journalDateFrom" onchange="this.dataset.auto='0'; filterJournal();">
+                    </div>
+                    <div class="form-group">
+                        <label>Дата до</label>
+                        <input type="date" id="journalDateTo" onchange="this.dataset.auto='0'; filterJournal();">
+                    </div>
+                    <div class="form-group">
+                        <label>Статус</label>
+                        <select id="journalStatusFilter" onchange="filterJournal()">
+                            <option value="">Все</option>
+                            <option value="draft">Черновик</option>
+                            <option value="sent">Выставлен</option>
+                            <option value="paid">Оплачен</option>
+                            <option value="overdue">Просрочен</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-sm btn-secondary" onclick="clearJournalFilters()" title="Сбросить все фильтры и показать текущий месяц">Сбросить</button>
+                </div>
+
+                <div id="journalDashboard" class="journal-dashboard"></div>
+
+                <div style="overflow-x: auto;">
+                    <table class="journal-table">
+                        <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>Дата</th>
+                                <th>Покупатель</th>
+                                <th>Сумма</th>
+                                <th>Месяц услуг</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journalBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="journal-summary" id="journalSummary" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div id="settings" class="page">
+            <div class="page-hero">
+                <h1>Настройки <em>сервиса.</em></h1>
+                <div class="page-hero-sub">Реквизиты, нумерация и покупатели</div>
+            </div>
+            <div class="settings-grid">
+                <div>
+                    <div class="settings-section">
+                        <h3>Моя организация (Поставщик)</h3>
+                        <div class="form-group">
+                            <label>Полное наименование</label>
+                            <input type="text" id="orgName">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label style="display:flex;align-items:center;gap:4px;">ИНН <button type="button" class="copy-btn" onclick="copyToClipboard(document.getElementById('orgInn').value,'ИНН')"><i data-lucide="copy" style="width:12px;height:12px;"></i></button></label>
+                                <input type="text" id="orgInn" maxlength="12">
+                            </div>
+                            <div class="form-group">
+                                <label style="display:flex;align-items:center;gap:4px;">КПП <button type="button" class="copy-btn" onclick="copyToClipboard(document.getElementById('orgKpp').value,'КПП')"><i data-lucide="copy" style="width:12px;height:12px;"></i></button></label>
+                                <input type="text" id="orgKpp" maxlength="9">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Юридический адрес</label>
+                            <input type="text" id="orgAddress">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>ФИО руководителя</label>
+                                <input type="text" id="orgDirector">
+                            </div>
+                            <div class="form-group">
+                                <label>ФИО бухгалтера</label>
+                                <input type="text" id="orgAccountant">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Банковские реквизиты</h3>
+                        <div class="form-group">
+                            <label>Банк получателя</label>
+                            <input type="text" id="bankName">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label style="display:flex;align-items:center;gap:4px;">БИК <button type="button" class="copy-btn" onclick="copyToClipboard(document.getElementById('bankBik').value,'БИК')"><i data-lucide="copy" style="width:12px;height:12px;"></i></button></label>
+                                <input type="text" id="bankBik" maxlength="9">
+                            </div>
+                            <div class="form-group">
+                                <label style="display:flex;align-items:center;gap:4px;">Корр. счёт <button type="button" class="copy-btn" onclick="copyToClipboard(document.getElementById('bankCorr').value,'Корр. счёт')"><i data-lucide="copy" style="width:12px;height:12px;"></i></button></label>
+                                <input type="text" id="bankCorr" maxlength="20">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:flex;align-items:center;gap:4px;">Расчётный счёт <button type="button" class="copy-btn" onclick="copyToClipboard(document.getElementById('bankAccount').value,'Расчётный счёт')"><i data-lucide="copy" style="width:12px;height:12px;"></i></button></label>
+                            <input type="text" id="bankAccount" maxlength="20">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="settings-section">
+                        <h3>Нумерация счетов</h3>
+                        <div class="form-group" style="max-width: 280px;">
+                            <label>Следующий номер счёта</label>
+                            <input type="number" id="nextInvoiceNumber" min="1">
+                        </div>
+                        <p class="settings-hint">Измените, если нужно сбросить нумерацию с нового года</p>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Знакомство с сервисом</h3>
+                        <div class="actions-bar" style="margin-top: 0;">
+                            <button class="btn btn-sm btn-secondary" onclick="startTour(true)"><i data-lucide="sparkles" style="width:14px;height:14px;"></i> Показать тур заново</button>
+                        </div>
+                        <p class="settings-hint">Пошаговое знакомство с интерфейсом на вкладке «Новый счёт»</p>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Управление данными</h3>
+                        <div class="actions-bar" style="margin-top: 0;">
+                                <button class="btn btn-sm btn-secondary" onclick="exportSettings()"><i data-lucide="download" style="width:14px;height:14px;"></i> Экспорт настроек</button>
+                                <label class="btn btn-sm btn-secondary" style="cursor: pointer;">
+                                <i data-lucide="upload" style="width:14px;height:14px;"></i> Импорт настроек
+                                <input type="file" accept=".json" onchange="importSettings(event)" style="display: none;">
+                            </label>
+                        </div>
+                        <p class="settings-hint">Экспорт/импорт позволяет переносить все данные между компьютерами</p>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Покупатели (Заказчики)</h3>
+                        <div style="margin-bottom: 1rem;">
+                            <button class="btn btn-sm btn-primary" onclick="openCounterpartyModal()"><i data-lucide="plus" style="width:14px;height:14px;"></i> Добавить покупателя</button>
+                        </div>
+
+                        <div style="overflow-x: auto;">
+                            <table class="journal-table">
+                                <thead>
+                                    <tr>
+                                        <th>Наименование</th>
+                                        <th>ИНН</th>
+                                        <th>Адрес</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="counterpartiesBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions-bar">
+                <button class="btn btn-primary" onclick="saveSettings()"><i data-lucide="save" style="width:16px;height:16px;"></i> Сохранить настройки</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="counterpartyModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Добавить покупателя</h3>
+                <button class="modal-close" onclick="closeCounterpartyModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="cpEditId">
+                <div class="form-group">
+                    <label>Наименование организации *</label>
+                    <input type="text" id="cpName" placeholder="ООО «Название»">
+                </div>
+                <div class="form-group">
+                    <label>Юридический адрес</label>
+                    <input type="text" id="cpAddress" placeholder="Индекс, город, улица, дом">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ОГРН</label>
+                        <input type="text" id="cpOgrn" maxlength="15">
+                    </div>
+                    <div class="form-group">
+                        <label>ИНН</label>
+                        <input type="text" id="cpInn" maxlength="12">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>КПП</label>
+                    <input type="text" id="cpKpp" maxlength="9">
+                </div>
+                <div class="form-group">
+                    <label>Основание (номер и дата договора)</label>
+                    <input type="text" id="cpBasis" placeholder="05-КУ/2018 от 01.11.2019 г.">
+                </div>
+                <div class="form-group">
+                    <label>ФИО представителя (для подписи)</label>
+                    <input type="text" id="cpSigner" placeholder="Фамилия И.О.">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCounterpartyModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="saveCounterparty()"><i data-lucide="check" style="width:16px;height:16px;"></i> Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="actionModal" class="modal-overlay">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Счёт из журнала</h3>
+                <button class="modal-close" onclick="closeActionModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Что сделать с этим счётом?</p>
+                <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
+                    <button class="btn btn-primary" id="actionEdit" onclick="actionEditInvoice()"><i data-lucide="pencil" style="width:16px;height:16px;"></i> Редактировать существующий</button>
+                    <button class="btn btn-secondary" id="actionCopy" onclick="actionCopyInvoice()"><i data-lucide="copy" style="width:16px;height:16px;"></i> Создать новый на основе этого</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea" style="display: none;"></div>
+    <div class="toast-container" id="toastContainer"></div>
+    <div class="preview-sidebar-tab" id="previewSidebarTab" onclick="togglePreview()" title="Показать превью (Ctrl+Shift+P)">
+        <svg class="preview-sidebar-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span class="preview-sidebar-tab-text">Превью</span>
+    </div>
+
+    <div class="tour-overlay" id="tourOverlay"></div>
+    <div class="tour-spotlight" id="tourSpotlight"></div>
+    <div class="tour-card" id="tourCard">
+        <div class="tour-card-eyebrow" id="tourCardEyebrow">Знакомство</div>
+        <div class="tour-card-title" id="tourCardTitle"></div>
+        <div class="tour-card-text" id="tourCardText"></div>
+        <div class="tour-card-progress" id="tourCardProgress"></div>
+        <div class="tour-card-footer">
+            <div class="tour-card-footer-left">
+                <button class="btn btn-secondary" id="tourBtnBack" onclick="tourBack()">Назад</button>
+                <button class="btn btn-primary" id="tourBtnNext" onclick="tourNext()">Далее</button>
+            </div>
+            <button class="tour-skip" onclick="tourSkip()">Пропустить тур</button>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEYS = {
+            supplier: 'invoice_supplier',
+            counterparties: 'invoice_counterparties',
+            nextNumber: 'invoice_nextNumber',
+            history: 'invoice_history',
+            lastPrice: 'invoice_lastPrice',
+            onboardingDone: 'invoice_onboardingDone'
+        };
+
+        const MONTHS_GENITIVE = [
+            '', 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+            'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+        ];
+
+        const MONTHS_NOMINATIVE = [
+            '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ];
+
+        let previewDebounce = null;
+        let editingInvoiceId = null;
+        let viewingInvoiceId = null;
+
+        // ===== ХРАНИЛИЩЕ =====
+
+        function safeGet(key) {
+            try { return localStorage.getItem(key); }
+            catch (e) { console.warn('localStorage недоступен:', e); return null; }
+        }
+
+        function safeSet(key, value) {
+            try { localStorage.setItem(key, value); return true; }
+            catch (e) { console.error('Ошибка записи localStorage:', e); showNotification('Данные не сохранены — хранилище заполнено', 'error'); return false; }
+        }
+
+        function loadJSON(key, fallback) {
+            const raw = safeGet(key);
+            if (!raw) return fallback;
+            try { return JSON.parse(raw); } catch { return fallback; }
+        }
+
+        function saveJSON(key, data) { return safeSet(key, JSON.stringify(data)); }
+
+        // ===== ИНИЦИАЛИЗАЦИЯ =====
+
+        function init() {
+            loadDefaultData();
+            setupNavigation();
+            setupEventListeners();
+            loadSettings();
+            loadCounterparties();
+            resetForm();
+            renderPreview();
+            updateProgress();
+            restorePreviewState();
+            maybeStartTour();
+        }
+
+        function loadDefaultData() {
+            if (!safeGet(STORAGE_KEYS.supplier)) {
+                saveJSON(STORAGE_KEYS.supplier, {
+                    name: 'ООО "ПАТРОНУС"',
+                    inn: '3702108970', kpp: '370201001',
+                    address: '153030, Ивановская обл, Иваново г, Носова ул, дом № 35/20, офис 1',
+                    director: 'Сейдаметова Э. С.', accountant: 'Сейдаметова Э. С.',
+                    bank: 'ТУЛЬСКОЕ ОТДЕЛЕНИЕ № 8604', bik: '047003608',
+                    corr: '30101810300000000608', account: '40702810817000010861'
+                });
+            }
+            if (!safeGet(STORAGE_KEYS.counterparties)) {
+                saveJSON(STORAGE_KEYS.counterparties, [{
+                    id: 1, name: 'ООО «Холдинговая компания "Оригинал»',
+                    address: '153000, г. Иваново, пр. Ленина, д. 20А',
+                    ogrn: '1143702024355', inn: '3702741090', kpp: '370201001',
+                    basis: '05-КУ/2018 от 01.11.2019 г.', signer: 'Ландихова Н.А.'
+                }]);
+            }
+            if (!safeGet(STORAGE_KEYS.nextNumber)) safeSet(STORAGE_KEYS.nextNumber, '97');
+            if (!safeGet(STORAGE_KEYS.history)) saveJSON(STORAGE_KEYS.history, []);
+        }
+
+        // ===== НАВИГАЦИЯ =====
+
+        function setupNavigation() {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                    document.getElementById(tab.dataset.page).classList.add('active');
+                    if (tab.dataset.page === 'journal') renderJournal();
+                });
+            });
+        }
+
+        // ===== СОБЫТИЯ =====
+
+        function setupEventListeners() {
+            const $ = id => document.getElementById(id);
+            $('counterparty').addEventListener('change', onCounterpartyChange);
+            $('invoiceDate').addEventListener('change', onDateChange);
+            $('serviceMonth').addEventListener('change', schedulePreview);
+            $('serviceYear').addEventListener('input', schedulePreview);
+            $('basis').addEventListener('input', () => { onBasisChange(); schedulePreview(); });
+            $('signer').addEventListener('input', schedulePreview);
+            $('vatType').addEventListener('change', schedulePreview);
+            $('invoiceNumber').addEventListener('input', schedulePreview);
+
+            document.addEventListener('keydown', e => {
+                if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); saveAndContinue(); }
+                if (e.ctrlKey && e.key === 'p') { e.preventDefault(); printInvoice(); }
+                if (e.ctrlKey && e.shiftKey && e.key === 'P') { e.preventDefault(); togglePreview(); }
+                if (e.key === 'Escape') { closeCounterpartyModal(); closeActionModal(); }
+            });
+
+            $('counterpartyModal').addEventListener('click', e => { if (e.target === $('counterpartyModal')) closeCounterpartyModal(); });
+            $('actionModal').addEventListener('click', e => { if (e.target === $('actionModal')) closeActionModal(); });
+        }
+
+        function togglePreview() {
+            const grid = document.querySelector('.form-grid');
+            const tab = document.getElementById('previewSidebarTab');
+            const isCollapsing = !grid.classList.contains('preview-collapsed');
+
+            grid.classList.toggle('preview-collapsed');
+            tab.classList.toggle('visible', isCollapsing);
+
+            try { localStorage.setItem('invoice_preview_collapsed', isCollapsing ? '1' : '0'); } catch(e) {}
+        }
+
+        function restorePreviewState() {
+            try {
+                if (localStorage.getItem('invoice_preview_collapsed') === '1') {
+                    const grid = document.querySelector('.form-grid');
+                    const tab = document.getElementById('previewSidebarTab');
+                    if (grid && tab) {
+                        grid.classList.add('preview-collapsed');
+                        tab.classList.add('visible');
+                    }
+                }
+            } catch(e) {}
+        }
+
+        function schedulePreview() {
+            clearTimeout(previewDebounce);
+            previewDebounce = setTimeout(() => { renderPreview(); updateProgress(); }, 150);
+        }
+
+        // ===== ОНБОРДИНГ-ТУР =====
+
+        const TOUR_STEPS = [
+            {
+                selector: null,
+                eyebrow: 'Знакомство',
+                title: 'Добро пожаловать в Счетовод',
+                text: 'Это сервис для быстрого выставления счетов на оплату: заполняете форму слева — готовый документ собирается справа. Покажем главное за минуту.'
+            },
+            {
+                selector: '#invoiceNumber',
+                eyebrow: 'Шаг 2',
+                title: 'Номер и дата счёта',
+                text: 'Номер счёта подставляется автоматически по нумерации, заданной в Настройках, и увеличивается после каждого сохранения. Дату можно изменить вручную.'
+            },
+            {
+                selector: '#counterparty',
+                eyebrow: 'Шаг 3',
+                title: 'Покупатель',
+                text: 'Выберите покупателя из уже сохранённых или нажмите «Добавить», чтобы завести нового прямо здесь, не уходя со страницы.'
+            },
+            {
+                selector: '#positionsBody',
+                eyebrow: 'Шаг 4',
+                title: 'Позиции счёта',
+                text: 'Добавляйте и удаляйте позиции кнопками на карточках. Сумма по каждой позиции и итог по счёту пересчитываются автоматически.'
+            },
+            {
+                selector: '.preview-section',
+                eyebrow: 'Шаг 5',
+                title: 'Живой предпросмотр',
+                text: 'Справа — предпросмотр итогового документа в реальном времени. Именно так счёт увидит ваш покупатель.'
+            },
+            {
+                selector: '#new-invoice .actions-bar',
+                eyebrow: 'Шаг 6',
+                title: 'Печать, PDF, Excel',
+                text: 'Готовый счёт можно сразу распечатать или выгрузить в PDF и Excel — без дополнительных настроек.'
+            },
+            {
+                selector: '.nav-tabs',
+                eyebrow: 'Шаг 7',
+                title: 'Журнал и настройки',
+                text: '«Журнал счетов» хранит все выставленные счета со статусами оплаты. В «Настройках» — реквизиты организации, нумерация и список покупателей.'
+            }
+        ];
+
+        let tourStepIndex = 0;
+        let tourResizeHandler = null;
+
+        function maybeStartTour() {
+            if (!safeGet(STORAGE_KEYS.onboardingDone)) startTour(false);
+        }
+
+        function startTour(force) {
+            if (!force && safeGet(STORAGE_KEYS.onboardingDone)) return;
+
+            // Тур всегда идёт по вкладке "Новый счёт" — переключаемся на неё.
+            const targetTab = document.querySelector('.nav-tab[data-page="new-invoice"]');
+            if (targetTab && !targetTab.classList.contains('active')) targetTab.click();
+
+            tourStepIndex = 0;
+            document.getElementById('tourOverlay').classList.add('active');
+            tourResizeHandler = () => renderTourStep();
+            window.addEventListener('resize', tourResizeHandler);
+            renderTourStep();
+        }
+
+        function renderTourStep() {
+            const step = TOUR_STEPS[tourStepIndex];
+            if (!step) { endTour(true); return; }
+
+            const overlay = document.getElementById('tourOverlay');
+            const spotlight = document.getElementById('tourSpotlight');
+            const card = document.getElementById('tourCard');
+
+            overlay.classList.add('active');
+
+            const target = step.selector ? document.querySelector(step.selector) : null;
+            const isCentered = !target;
+
+            spotlight.classList.toggle('center', isCentered);
+            card.classList.toggle('center', isCentered);
+
+            if (target) {
+                target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                // Небольшая задержка, чтобы прокрутка успела завершиться перед замером позиции.
+                setTimeout(() => {
+                    positionTourElements(target, card, spotlight, isCentered);
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        spotlight.classList.add('active');
+                        card.classList.add('active');
+                    }));
+                }, 260);
+            } else {
+                positionTourElements(null, card, spotlight, true);
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    spotlight.classList.add('active');
+                    card.classList.add('active');
+                }));
+            }
+
+            document.getElementById('tourCardEyebrow').textContent = step.eyebrow;
+            document.getElementById('tourCardTitle').textContent = step.title;
+            document.getElementById('tourCardText').textContent = step.text;
+
+            const progress = document.getElementById('tourCardProgress');
+            progress.innerHTML = TOUR_STEPS.map((_, i) => {
+                const cls = i === tourStepIndex ? 'current' : (i < tourStepIndex ? 'done' : '');
+                return `<span class="tour-dot ${cls}"></span>`;
+            }).join('') + `<span style="margin-left:6px;font-size:11px;color:var(--text-muted);">Шаг ${tourStepIndex + 1} из ${TOUR_STEPS.length}</span>`;
+
+            document.getElementById('tourBtnBack').style.visibility = tourStepIndex === 0 ? 'hidden' : 'visible';
+            document.getElementById('tourBtnNext').textContent = tourStepIndex === TOUR_STEPS.length - 1 ? 'Готово' : 'Далее';
+        }
+
+        function positionTourElements(target, card, spotlight, isCentered) {
+            if (isCentered || !target) {
+                spotlight.style.top = '50%';
+                spotlight.style.left = '50%';
+                card.style.top = '50%';
+                card.style.left = '50%';
+                return;
+            }
+
+            const rect = target.getBoundingClientRect();
+            const pad = 8;
+
+            const spotTop = Math.max(4, rect.top - pad);
+            const spotLeft = Math.max(4, rect.left - pad);
+            const spotWidth = Math.min(rect.width + pad * 2, window.innerWidth - spotLeft - 4);
+            const spotHeight = Math.min(rect.height + pad * 2, window.innerHeight - spotTop - 4);
+
+            spotlight.style.top = spotTop + 'px';
+            spotlight.style.left = spotLeft + 'px';
+            spotlight.style.width = spotWidth + 'px';
+            spotlight.style.height = spotHeight + 'px';
+
+            // На мобильных плашка закреплена снизу через CSS — не позиционируем вручную.
+            if (window.innerWidth <= 640) return;
+
+            const cardMargin = 16;
+            const viewportW = window.innerWidth;
+            const viewportH = window.innerHeight;
+
+            // Измеряем реальные размеры карточки (а не константы), чтобы клампинг был точным.
+            const wasHidden = card.style.visibility;
+            card.style.visibility = 'hidden';
+            card.style.left = '0px';
+            card.style.top = '0px';
+            const cardWidth = card.offsetWidth || 340;
+            const cardHeight = card.offsetHeight || 220;
+            card.style.visibility = wasHidden;
+
+            const spaceBelow = viewportH - rect.bottom;
+            const spaceAbove = rect.top;
+
+            let top, left;
+
+            if (spaceBelow >= cardHeight + cardMargin || spaceBelow >= spaceAbove) {
+                top = rect.bottom + cardMargin;
+            } else {
+                top = rect.top - cardHeight - cardMargin;
+            }
+
+            const spaceRight = viewportW - rect.right;
+            if (spaceRight >= cardWidth + cardMargin) {
+                left = Math.min(rect.left, viewportW - cardWidth - cardMargin);
+            } else {
+                left = rect.right - cardWidth;
+            }
+
+            // Финальный клампинг по реальным размерам карточки — не даём ей вылезти
+            // ни за один край экрана, даже если рядом с целью совсем мало места.
+            top = Math.max(cardMargin, Math.min(top, viewportH - cardHeight - cardMargin));
+            left = Math.max(cardMargin, Math.min(left, viewportW - cardWidth - cardMargin));
+
+            card.style.top = top + 'px';
+            card.style.left = left + 'px';
+        }
+
+        function tourNext() {
+            const spotlight = document.getElementById('tourSpotlight');
+            const card = document.getElementById('tourCard');
+            spotlight.classList.remove('active');
+            card.classList.remove('active');
+            tourStepIndex++;
+            if (tourStepIndex >= TOUR_STEPS.length) { endTour(true); return; }
+            setTimeout(renderTourStep, 260);
+        }
+
+        function tourBack() {
+            if (tourStepIndex === 0) return;
+            const spotlight = document.getElementById('tourSpotlight');
+            const card = document.getElementById('tourCard');
+            spotlight.classList.remove('active');
+            card.classList.remove('active');
+            tourStepIndex--;
+            setTimeout(renderTourStep, 260);
+        }
+
+        function tourSkip() { endTour(true); }
+
+        function endTour(markDone) {
+            document.getElementById('tourOverlay').classList.remove('active');
+            document.getElementById('tourSpotlight').classList.remove('active');
+            document.getElementById('tourCard').classList.remove('active');
+            if (tourResizeHandler) { window.removeEventListener('resize', tourResizeHandler); tourResizeHandler = null; }
+            if (markDone) safeSet(STORAGE_KEYS.onboardingDone, '1');
+        }
+
+        // ===== ФОРМА =====
+
+        function resetForm() {
+            document.getElementById('invoiceNumber').value = safeGet(STORAGE_KEYS.nextNumber) || '1';
+            document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            document.getElementById('serviceMonth').value = now.getMonth() + 1;
+            document.getElementById('serviceYear').value = now.getFullYear();
+            editingInvoiceId = null;
+            document.getElementById('positionsBody').innerHTML = '';
+            addPosition();
+        }
+
+        function onDateChange() {
+            const dateStr = document.getElementById('invoiceDate').value;
+            if (dateStr) {
+                const date = new Date(dateStr + 'T00:00:00');
+                document.getElementById('serviceYear').value = date.getFullYear();
+                document.getElementById('serviceMonth').value = date.getMonth() + 1;
+                schedulePreview();
+            }
+        }
+
+        function onBasisChange() {
+            document.querySelectorAll('#positionsBody .position-card').forEach(card => {
+                const textarea = card.querySelector('.pos-name');
+                if (!textarea.dataset.userEdited) updateServiceName(card);
+            });
+        }
+
+        // ===== ПОЗИЦИИ =====
+
+        function addPosition(preset) {
+            const container = document.getElementById('positionsBody');
+            const num = container.children.length + 1;
+            const lastPrice = safeGet(STORAGE_KEYS.lastPrice) || '5000';
+
+            const card = document.createElement('div');
+            card.className = 'position-card';
+            card.innerHTML = `
+                <div class="position-card-header">
+                    <div class="position-number">${num}</div>
+                    <div class="position-card-title">Позиция ${num}</div>
+                    <button class="position-delete" onclick="removePosition(this)" title="Удалить позицию">
+                        <i data-lucide="trash-2" style="width:16px;height:16px;"></i>
+                    </button>
+                </div>
+                <div class="position-name-group">
+                    <label>Наименование услуги</label>
+                    <textarea rows="2" class="pos-name" placeholder="Опишите услугу..."></textarea>
+                </div>
+                <div class="position-fields">
+                    <div class="position-field">
+                        <label>Количество</label>
+                        <input type="number" class="pos-qty" value="${preset ? preset.qty : 1}" min="0" step="any">
+                    </div>
+                    <div class="position-field">
+                        <label>Ед. измерения</label>
+                        <input type="text" class="pos-unit" value="${preset ? preset.unit : 'шт.'}">
+                    </div>
+                    <div class="position-field price-field">
+                        <label>Цена за ед.</label>
+                        <input type="number" class="pos-price" value="${preset ? preset.price : lastPrice}" min="0" step="0.01">
+                    </div>
+                    <div class="position-field sum-field">
+                        <label>Сумма</label>
+                        <input type="text" class="pos-sum" value="0" readonly>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+
+            if (preset) {
+                card.querySelector('.pos-name').value = preset.name || '';
+                card.querySelector('.pos-name').dataset.userEdited = '1';
+            } else {
+                updateServiceName(card);
+            }
+
+            updateRowTotal(card);
+            attachPositionListeners(card);
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function attachPositionListeners(card) {
+            card.querySelector('.pos-qty').addEventListener('input', () => { updateRowTotal(card); schedulePreview(); });
+            card.querySelector('.pos-price').addEventListener('input', () => { updateRowTotal(card); schedulePreview(); });
+            card.querySelector('.pos-price').addEventListener('blur', () => { safeSet(STORAGE_KEYS.lastPrice, card.querySelector('.pos-price').value); });
+            const nameEl = card.querySelector('.pos-name');
+            nameEl.addEventListener('input', () => { nameEl.dataset.userEdited = '1'; schedulePreview(); autoGrow(nameEl); });
+            autoGrow(nameEl);
+        }
+
+        function autoGrow(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+        }
+
+        function removePosition(btn) {
+            const container = document.getElementById('positionsBody');
+            if (container.children.length > 1) {
+                const card = btn.closest('.position-card');
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-10px) scale(0.95)';
+                setTimeout(() => {
+                    card.remove();
+                    renumberPositions();
+                    schedulePreview();
+                }, 200);
+            }
+        }
+
+        function renumberPositions() {
+            const cards = document.getElementById('positionsBody').children;
+            for (let i = 0; i < cards.length; i++) {
+                cards[i].querySelector('.position-number').textContent = i + 1;
+                cards[i].querySelector('.position-card-title').textContent = `Позиция ${i + 1}`;
+            }
+        }
+
+        function updateRowTotal(card) {
+            const qty = parseFloat(card.querySelector('.pos-qty').value) || 0;
+            const price = parseFloat(card.querySelector('.pos-price').value) || 0;
+            const sum = qty * price;
+            card.querySelector('.pos-sum').value = formatNumber(sum);
+        }
+
+        function updateServiceName(card) {
+            const basis = document.getElementById('basis').value.trim();
+            const month = document.getElementById('serviceMonth').value;
+            const year = document.getElementById('serviceYear').value;
+            const monthName = MONTHS_GENITIVE[month] || '';
+            const b = basis || '[укажите основание]';
+            card.querySelector('.pos-name').value = `Услуги по договору ${b}, за оказание консалтинговых услуг в сфере пожарной безопасности за ${monthName} ${year}г.`;
+        }
+
+        // ===== КОНТРАГЕНТЫ =====
+
+        function loadCounterparties() {
+            const list = loadJSON(STORAGE_KEYS.counterparties, []);
+            const select = document.getElementById('counterparty');
+            const prev = select.value;
+            select.innerHTML = '<option value="">— Выберите покупателя —</option>';
+            list.forEach(cp => {
+                const opt = document.createElement('option');
+                opt.value = cp.id;
+                opt.textContent = cp.name;
+                select.appendChild(opt);
+            });
+            if (prev) select.value = prev;
+            renderCounterpartiesList();
+        }
+
+        function onCounterpartyChange() {
+            const cpId = parseInt(document.getElementById('counterparty').value);
+            const list = loadJSON(STORAGE_KEYS.counterparties, []);
+            const cp = list.find(c => c.id === cpId);
+            if (cp) {
+                document.getElementById('basis').value = cp.basis || '';
+                document.getElementById('signer').value = cp.signer || '';
+            } else {
+                document.getElementById('basis').value = '';
+                document.getElementById('signer').value = '';
+            }
+            populateBasisList(cpId);
+            document.querySelectorAll('#positionsBody .position-card').forEach(card => {
+                if (!card.querySelector('.pos-name').dataset.userEdited) updateServiceName(card);
+            });
+            schedulePreview();
+        }
+
+        // У одного покупателя может быть несколько договоров — собираем варианты
+        // из карточки покупателя и из истории уже выставленных ему счетов.
+        function populateBasisList(cpId) {
+            const datalist = document.getElementById('basisList');
+            if (!datalist) return;
+            const variants = new Set();
+            const cpList = loadJSON(STORAGE_KEYS.counterparties, []);
+            const cp = cpList.find(c => c.id === cpId);
+            if (cp && cp.basis) variants.add(cp.basis);
+            const history = loadJSON(STORAGE_KEYS.history, []);
+            history.forEach(inv => {
+                if (inv.counterpartyId === cpId && inv.basis) variants.add(inv.basis);
+            });
+            datalist.innerHTML = [...variants].map(v => `<option value="${esc(v)}"></option>`).join('');
+        }
+
+        function openCounterpartyModal(editId) {
+            const modal = document.getElementById('counterpartyModal');
+            document.getElementById('cpEditId').value = editId || '';
+            if (editId) {
+                document.getElementById('modalTitle').textContent = 'Редактировать покупателя';
+                const list = loadJSON(STORAGE_KEYS.counterparties, []);
+                const cp = list.find(c => c.id === parseInt(editId));
+                if (cp) {
+                    document.getElementById('cpName').value = cp.name || '';
+                    document.getElementById('cpAddress').value = cp.address || '';
+                    document.getElementById('cpOgrn').value = cp.ogrn || '';
+                    document.getElementById('cpInn').value = cp.inn || '';
+                    document.getElementById('cpKpp').value = cp.kpp || '';
+                    document.getElementById('cpBasis').value = cp.basis || '';
+                    document.getElementById('cpSigner').value = cp.signer || '';
+                }
+            } else {
+                document.getElementById('modalTitle').textContent = 'Добавить покупателя';
+                ['cpName','cpAddress','cpOgrn','cpInn','cpKpp','cpBasis','cpSigner'].forEach(id => {
+                    document.getElementById(id).value = '';
+                });
+            }
+            modal.classList.add('active');
+            setTimeout(() => document.getElementById('cpName').focus(), 100);
+        }
+
+        function closeCounterpartyModal() { document.getElementById('counterpartyModal').classList.remove('active'); }
+
+        function saveCounterparty() {
+            const name = document.getElementById('cpName').value.trim();
+            if (!name) { showNotification('Введите наименование организации', 'error'); document.getElementById('cpName').focus(); return; }
+            const list = loadJSON(STORAGE_KEYS.counterparties, []);
+            const editId = document.getElementById('cpEditId').value;
+            const data = {
+                name,
+                address: document.getElementById('cpAddress').value.trim(),
+                ogrn: document.getElementById('cpOgrn').value.trim(),
+                inn: document.getElementById('cpInn').value.trim(),
+                kpp: document.getElementById('cpKpp').value.trim(),
+                basis: document.getElementById('cpBasis').value.trim(),
+                signer: document.getElementById('cpSigner').value.trim()
+            };
+            if (editId) {
+                const idx = list.findIndex(c => c.id === parseInt(editId));
+                if (idx !== -1) list[idx] = { ...list[idx], ...data };
+            } else {
+                data.id = Date.now();
+                list.push(data);
+            }
+            saveJSON(STORAGE_KEYS.counterparties, list);
+            loadCounterparties();
+            closeCounterpartyModal();
+            showNotification(editId ? 'Покупатель обновлён' : 'Покупатель добавлен', 'success');
+        }
+
+        function deleteCounterparty(id) {
+            if (!confirm('Удалить покупателя?')) return;
+            saveJSON(STORAGE_KEYS.counterparties, loadJSON(STORAGE_KEYS.counterparties, []).filter(c => c.id !== id));
+            loadCounterparties();
+            showNotification('Покупатель удалён', 'success');
+        }
+
+        function renderCounterpartiesList() {
+            const list = loadJSON(STORAGE_KEYS.counterparties, []);
+            const tbody = document.getElementById('counterpartiesBody');
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon"><i data-lucide="users" style="width:40px;height:40px;"></i></div><div class="empty-state-text">Нет покупателей</div><div class="empty-state-hint">Добавьте первого покупателя</div></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map(cp => `
+                <tr>
+                    <td><strong>${esc(cp.name)}</strong></td>
+                    <td>${esc(cp.inn || '—')}</td>
+                    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cp.address || '—')}</td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn btn-ghost" onclick="openCounterpartyModal(${cp.id})" title="Редактировать покупателя"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+                        <button class="btn btn-ghost btn-danger" onclick="deleteCounterparty(${cp.id})" title="Удалить покупателя"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ===== ПРЕВЬЮ СЧЁТА =====
+
+        function renderPreview() {
+            const supplier = loadJSON(STORAGE_KEYS.supplier, {});
+            const num = document.getElementById('invoiceNumber').value || '—';
+            const dateVal = document.getElementById('invoiceDate').value;
+            const formattedDate = dateVal ? formatDate(dateVal) : '—.__.____';
+            const cpId = parseInt(document.getElementById('counterparty').value);
+            const cpList = loadJSON(STORAGE_KEYS.counterparties, []);
+            const cp = cpList.find(c => c.id === cpId) || {};
+            const basis = document.getElementById('basis').value || '—';
+            const signer = document.getElementById('signer').value || '—';
+            const vatType = document.getElementById('vatType').value;
+
+            const rows = document.getElementById('positionsBody').children;
+            const items = [];
+            let totalSum = 0;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const name = row.querySelector('.pos-name').value || '';
+                const qty = parseFloat(row.querySelector('.pos-qty').value) || 0;
+                const unit = row.querySelector('.pos-unit').value || 'шт.';
+                const price = parseFloat(row.querySelector('.pos-price').value) || 0;
+                const sum = qty * price;
+                items.push({ num: i + 1, name, qty, unit, price, sum });
+                totalSum += sum;
+            }
+
+            let vatAmount = 0, totalWithVat = totalSum;
+            if (vatType === '20') {
+                vatAmount = Math.round(totalSum * 0.2 * 100) / 100;
+                totalWithVat = Math.round((totalSum + vatAmount) * 100) / 100;
+            }
+
+            let html = `
+                <div class="invoice-title">Счёт на оплату № ${esc(num)} от ${formattedDate} г.</div>
+
+                <div class="bank-block">
+                    <table>
+                        <colgroup>
+                            <col class="bc-label"><col class="bc-value"><col class="bc-label"><col class="bc-value">
+                        </colgroup>
+                        <tr>
+                            <td class="bl">Банк получателя</td>
+                            <td class="bacc" colspan="3">${esc(supplier.bank || '')}</td>
+                        </tr>
+                        <tr>
+                            <td class="bl">БИК</td>
+                            <td class="bv">${esc(supplier.bik || '')}</td>
+                            <td class="bl">Сч. №</td>
+                            <td class="bv">${esc(supplier.corr || '')}</td>
+                        </tr>
+                        <tr>
+                            <td class="bl">ИНН</td>
+                            <td class="bv">${esc(supplier.inn || '')}</td>
+                            <td class="bl">КПП</td>
+                            <td class="bv">${esc(supplier.kpp || '')}</td>
+                        </tr>
+                        <tr>
+                            <td class="bl">Сч. №</td>
+                            <td class="bacc" colspan="3">${esc(supplier.account || '')}</td>
+                        </tr>
+                        <tr>
+                            <td class="bl">Получатель</td>
+                            <td class="bacc" colspan="3">${esc(supplier.name || '')}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="parties-block">
+                    <div class="party-row">
+                        <span class="party-label">Поставщик (Исполнитель):</span>
+                        <span class="party-value">${esc(supplier.name || '')}, ИНН ${esc(supplier.inn || '')}, КПП ${esc(supplier.kpp || '')}, ${esc(supplier.address || '')}</span>
+                    </div>
+                    <div class="party-row">
+                        <span class="party-label">Покупатель (Заказчик):</span>
+                        <span class="party-value">${cp.name ? esc(cp.name) : '—'}, ${cp.address ? esc(cp.address) : ''}${cp.ogrn ? `, ОГРН ${esc(cp.ogrn)}` : ''}, ИНН/КПП ${cp.inn || '—'}/${cp.kpp || '—'}</span>
+                    </div>
+                </div>
+
+                <div class="basis-block">Основание: ${esc(basis)}</div>
+                <div class="invoice-table-wrap"><table class="invoice-table">
+                    <thead><tr>
+                        <th style="width:5%;text-align:center;">№</th>
+                        <th style="width:53%">Товары (работы, услуги)</th>
+                        <th style="width:7%;text-align:center;">Кол-во</th>
+                        <th style="width:7%;text-align:center;">Ед.</th>
+                        <th style="width:12%;text-align:right;">Цена</th>
+                        <th style="width:12%;text-align:right;">Сумма</th>
+                    </tr></thead>
+                    <tbody>`;
+
+            items.forEach(item => {
+                html += `<tr><td style="text-align:center;">${item.num}</td><td>${esc(item.name)}</td><td style="text-align:center;">${item.qty}</td><td style="text-align:center;">${esc(item.unit)}</td><td style="text-align:right;">${formatNumber(item.price)}</td><td style="text-align:right;">${formatNumber(item.sum)}</td></tr>`;
+            });
+
+            html += `</tbody></table></div>
+                <div class="invoice-totals"><p>Итого: ${formatNumber(totalSum)}</p>`;
+            html += vatType === '20' ? `<p>НДС 20%: ${formatNumber(vatAmount)}</p>` : `<p>Без налога (НДС): —</p>`;
+            html += `<p class="total-line">Всего к оплате: ${formatNumber(totalWithVat)}</p></div>
+                <div class="invoice-words">Всего наименований ${items.length}, на сумму ${formatNumber(totalWithVat)} руб.<br>${numberToWords(totalWithVat)}</div>
+                <div class="invoice-signatures">
+                    <div class="signature-block">
+                        <div class="signature-label">Руководитель</div>
+                        <div class="signature-line">
+                            <span class="signature-dash"></span>
+                            <span class="signature-name">${esc(supplier.director || '')}</span>
+                        </div>
+                    </div>
+                    <div class="signature-block">
+                        <div class="signature-label">Бухгалтер</div>
+                        <div class="signature-line">
+                            <span class="signature-dash"></span>
+                            <span class="signature-name">${esc(supplier.accountant || '')}</span>
+                        </div>
+                    </div>
+                </div>`;
+
+            document.getElementById('invoicePreview').innerHTML = html;
+        }
+
+        // ===== СОХРАНЕНИЕ СЧЁТА =====
+
+        function saveAndContinue() {
+            const cpId = document.getElementById('counterparty').value;
+            if (!cpId) { showNotification('Выберите покупателя', 'error'); return; }
+            const totalSum = calculateTotal();
+            if (totalSum <= 0) { showNotification('Сумма должна быть больше нуля', 'error'); return; }
+
+            const history = loadJSON(STORAGE_KEYS.history, []);
+            const cpList = loadJSON(STORAGE_KEYS.counterparties, []);
+            const cp = cpList.find(c => c.id === parseInt(cpId));
+            const supplier = loadJSON(STORAGE_KEYS.supplier, {});
+            const isEditing = !!editingInvoiceId;
+
+            const existing = editingInvoiceId ? history.find(h => h.id === editingInvoiceId) : null;
+
+            const invoiceData = {
+                id: editingInvoiceId || Date.now(),
+                number: document.getElementById('invoiceNumber').value,
+                date: document.getElementById('invoiceDate').value,
+                counterpartyId: parseInt(cpId),
+                counterpartyName: cp ? cp.name : '',
+                month: parseInt(document.getElementById('serviceMonth').value),
+                year: parseInt(document.getElementById('serviceYear').value),
+                total: totalSum,
+                vatType: document.getElementById('vatType').value,
+                basis: document.getElementById('basis').value,
+                signer: document.getElementById('signer').value,
+                positions: getCurrentPositions(),
+                supplier: { ...supplier },
+                status: existing ? normalizeInvoiceStatus(existing.status) : 'sent'
+            };
+
+            if (editingInvoiceId) {
+                const idx = history.findIndex(h => h.id === editingInvoiceId);
+                if (idx !== -1) history[idx] = invoiceData;
+            } else {
+                history.push(invoiceData);
+                safeSet(STORAGE_KEYS.nextNumber, (parseInt(document.getElementById('invoiceNumber').value) + 1).toString());
+            }
+
+            saveJSON(STORAGE_KEYS.history, history);
+            resetForm();
+            renderPreview();
+            showNotification(isEditing ? 'Счёт обновлён' : 'Счёт сохранён', 'success');
+        }
+
+        function getCurrentPositions() {
+            const rows = document.getElementById('positionsBody').children;
+            const positions = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                positions.push({
+                    name: row.querySelector('.pos-name').value,
+                    qty: parseFloat(row.querySelector('.pos-qty').value) || 0,
+                    unit: row.querySelector('.pos-unit').value || 'шт.',
+                    price: parseFloat(row.querySelector('.pos-price').value) || 0
+                });
+            }
+            return positions;
+        }
+
+        function calculateTotal() {
+            let total = 0;
+            const rows = document.getElementById('positionsBody').children;
+            for (let i = 0; i < rows.length; i++) {
+                total += (parseFloat(rows[i].querySelector('.pos-qty').value) || 0) * (parseFloat(rows[i].querySelector('.pos-price').value) || 0);
+            }
+            return Math.round(total * 100) / 100;
+        }
+
+        // ===== СТАТУСЫ СЧЕТОВ =====
+
+        const INVOICE_STATUSES = {
+            draft:   { label: 'Черновик',  varBg: '--border-strong', varFg: '--text-secondary' },
+            sent:    { label: 'Выставлен', varBg: '--accent-light',  varFg: '--accent-ink' },
+            paid:    { label: 'Оплачен',   varBg: '--success-light', varFg: '--success-hover' },
+            overdue: { label: 'Просрочен', varBg: '--danger-light',  varFg: '--danger' }
+        };
+
+        function normalizeInvoiceStatus(status) {
+            return INVOICE_STATUSES[status] ? status : 'sent';
+        }
+
+        function invoiceStatusBadge(inv) {
+            const status = normalizeInvoiceStatus(inv.status);
+            const meta = INVOICE_STATUSES[status];
+            return `<button type="button" class="status-badge" style="background:var(${meta.varBg});color:var(${meta.varFg});" onclick="toggleStatusPopover(event, ${inv.id})">${esc(meta.label)}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>`;
+        }
+
+        function toggleStatusPopover(evt, invId) {
+            evt.stopPropagation();
+            const existing = document.querySelector('.status-popover');
+            const wasOpenForThis = existing && existing.dataset.invId === String(invId);
+            if (existing) existing.remove();
+            if (wasOpenForThis) return;
+
+            const btn = evt.currentTarget;
+            const pop = document.createElement('div');
+            pop.className = 'status-popover';
+            pop.dataset.invId = invId;
+            pop.innerHTML = Object.entries(INVOICE_STATUSES).map(([key, meta]) =>
+                `<button type="button" class="status-popover-item" onclick="setInvoiceStatus(${invId}, '${key}')"><span class="status-dot" style="background:var(${meta.varFg});"></span>${esc(meta.label)}</button>`
+            ).join('');
+
+            document.body.appendChild(pop);
+            const rect = btn.getBoundingClientRect();
+            const popWidth = 170;
+            let left = rect.left;
+            if (left + popWidth > window.innerWidth - 8) left = window.innerWidth - popWidth - 8;
+            pop.style.top = (rect.bottom + 6) + 'px';
+            pop.style.left = left + 'px';
+
+            setTimeout(() => document.addEventListener('click', closeStatusPopoverOnce, { once: true }), 0);
+        }
+
+        function closeStatusPopoverOnce() {
+            const pop = document.querySelector('.status-popover');
+            if (pop) pop.remove();
+        }
+
+        function setInvoiceStatus(invId, status) {
+            const history = loadJSON(STORAGE_KEYS.history, []);
+            const idx = history.findIndex(h => h.id === invId);
+            if (idx === -1) return;
+            history[idx].status = normalizeInvoiceStatus(status);
+            saveJSON(STORAGE_KEYS.history, history);
+            closeStatusPopoverOnce();
+            filterJournal();
+            showNotification('Статус обновлён', 'success');
+        }
+
+        // ===== ДАШБОРД ЖУРНАЛА =====
+
+        function renderJournalDashboard(filteredHistory) {
+            const el = document.getElementById('journalDashboard');
+            if (!el) return;
+
+            const count = filteredHistory.length;
+            const total = filteredHistory.reduce((s, inv) => s + (inv.total || 0), 0);
+            const avg = count ? total / count : 0;
+
+            let topBuyer = null;
+            if (count) {
+                const byBuyer = {};
+                filteredHistory.forEach(inv => {
+                    const name = inv.counterpartyName || 'Без названия';
+                    byBuyer[name] = (byBuyer[name] || 0) + (inv.total || 0);
+                });
+                const sortedBuyers = Object.entries(byBuyer).sort((a, b) => b[1] - a[1]);
+                if (sortedBuyers.length) topBuyer = { name: sortedBuyers[0][0], sum: sortedBuyers[0][1] };
+            }
+
+            const cards = [
+                { label: 'Сумма счетов', value: `${formatNumber(total)} ₽`, sub: null },
+                { label: 'Количество счетов', value: String(count), sub: null },
+                { label: 'Средний чек', value: count ? `${formatNumber(avg)} ₽` : '—', sub: null },
+                { label: 'Топ покупатель', value: topBuyer ? `${formatNumber(topBuyer.sum)} ₽` : '—', sub: topBuyer ? topBuyer.name : 'Недостаточно данных' }
+            ];
+
+            el.innerHTML = cards.map(c => `
+                <div class="journal-metric-card">
+                    <div class="journal-metric-label">${esc(c.label)}</div>
+                    <div class="journal-metric-value mono">${c.value}</div>
+                    ${c.sub ? `<div class="journal-metric-sub" title="${esc(c.sub)}">${esc(c.sub)}</div>` : ''}
+                </div>
+            `).join('') + renderJournalChart();
+
+            lucide.createIcons();
+        }
+
+        function renderJournalChart() {
+            const fullHistory = loadJSON(STORAGE_KEYS.history, []);
+            const now = new Date();
+            const months = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                months.push({ year: d.getFullYear(), month: d.getMonth() + 1, sum: 0 });
+            }
+
+            fullHistory.forEach(inv => {
+                if (!inv.date) return;
+                const invDate = new Date(inv.date);
+                const bucket = months.find(m => m.year === invDate.getFullYear() && m.month === invDate.getMonth() + 1);
+                if (bucket) bucket.sum += (inv.total || 0);
+            });
+
+            const maxSum = Math.max(...months.map(m => m.sum), 1);
+
+            return `
+                <div class="journal-chart">
+                    <div class="journal-metric-label">Сумма счетов по месяцам (6 мес.)</div>
+                    <div class="journal-chart-bars">
+                        ${months.map(m => {
+                            const heightPct = Math.max(4, Math.round((m.sum / maxSum) * 100));
+                            const monthName = (MONTHS_NOMINATIVE[m.month] || '').slice(0, 3);
+                            return `
+                                <div class="journal-chart-col" title="${monthName} ${m.year}: ${formatNumber(m.sum)} ₽">
+                                    <div class="journal-chart-bar-track"><div class="journal-chart-bar" style="height:${heightPct}%;"></div></div>
+                                    <div class="journal-chart-month">${monthName}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== ЖУРНАЛ =====
+
+        function populateJournalCounterpartyList() {
+            const list = loadJSON(STORAGE_KEYS.counterparties, []);
+            const datalist = document.getElementById('journalCounterpartyList');
+            if (datalist) datalist.innerHTML = list.map(cp => `<option value="${esc(cp.name)}"></option>`).join('');
+        }
+
+        function currentMonthRange() {
+            const now = new Date();
+            const y = now.getFullYear(), m = now.getMonth();
+            const pad = n => String(n).padStart(2, '0');
+            const from = `${y}-${pad(m + 1)}-01`;
+            const lastDay = new Date(y, m + 1, 0).getDate();
+            const to = `${y}-${pad(m + 1)}-${pad(lastDay)}`;
+            return { from, to };
+        }
+
+        function renderJournal() {
+            populateJournalCounterpartyList();
+
+            // По умолчанию журнал показывает счета за текущий месяц.
+            // При переходе в новый месяц диапазон обновляется автоматически,
+            // если пользователь не выставил фильтр по датам вручную.
+            const dateFrom = document.getElementById('journalDateFrom');
+            const dateTo = document.getElementById('journalDateTo');
+            const range = currentMonthRange();
+            if (dateFrom.dataset.auto !== '0' && !dateFrom.value) { dateFrom.value = range.from; dateFrom.dataset.auto = '1'; }
+            if (dateTo.dataset.auto !== '0' && !dateTo.value) { dateTo.value = range.to; dateTo.dataset.auto = '1'; }
+            if (dateFrom.dataset.auto === '1' && dateFrom.value !== range.from) { dateFrom.value = range.from; }
+            if (dateTo.dataset.auto === '1' && dateTo.value !== range.to) { dateTo.value = range.to; }
+
+            filterJournal();
+        }
+
+        function filterJournal() {
+            const search = document.getElementById('journalSearch').value.toLowerCase();
+            const dateFrom = document.getElementById('journalDateFrom').value;
+            const dateTo = document.getElementById('journalDateTo').value;
+            const statusFilter = document.getElementById('journalStatusFilter').value;
+            const fullHistory = loadJSON(STORAGE_KEYS.history, []).map(inv => ({ ...inv, status: normalizeInvoiceStatus(inv.status) }));
+            let history = fullHistory;
+
+            if (search) history = history.filter(inv => (inv.number || '').toLowerCase().includes(search) || (inv.counterpartyName || '').toLowerCase().includes(search));
+            if (dateFrom) history = history.filter(inv => inv.date >= dateFrom);
+            if (dateTo) history = history.filter(inv => inv.date <= dateTo);
+            if (statusFilter) history = history.filter(inv => inv.status === statusFilter);
+
+            const tbody = document.getElementById('journalBody');
+            const sorted = [...history].reverse();
+
+            renderJournalDashboard(sorted);
+
+            if (!fullHistory.length) {
+                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon"><i data-lucide="file-text" style="width:40px;height:40px;"></i></div><div class="empty-state-text">Нет счетов</div><div class="empty-state-hint">Создайте первый счёт на вкладке «Новый счёт»</div></div></td></tr>';
+                document.getElementById('journalSummary').style.display = 'none';
+                lucide.createIcons();
+                return;
+            }
+
+            if (!sorted.length) {
+                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon"><i data-lucide="search" style="width:40px;height:40px;"></i></div><div class="empty-state-text">Ничего не найдено</div><div class="empty-state-hint">Попробуйте изменить период или нажмите «Сбросить»</div></div></td></tr>';
+                document.getElementById('journalSummary').style.display = 'none';
+                lucide.createIcons();
+                return;
+            }
+
+            tbody.innerHTML = sorted.map(inv => `
+                <tr>
+                    <td><strong>${esc(inv.number)}</strong></td>
+                    <td>${formatDate(inv.date)}</td>
+                    <td>${esc(inv.counterpartyName)}</td>
+                    <td style="white-space:nowrap;">${formatNumber(inv.total)} ₽</td>
+                    <td>${MONTHS_GENITIVE[inv.month] || ''} ${inv.year}</td>
+                    <td>${invoiceStatusBadge(inv)}</td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn btn-ghost" onclick="openInvoiceAction(${inv.id})" title="Открыть / редактировать счёт"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+                        <button class="btn btn-ghost" onclick="quickPdfInvoice(${inv.id})" title="Скачать PDF (для печати)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></button>
+                        <button class="btn btn-ghost" onclick="quickExcelInvoice(${inv.id})" title="Скачать Excel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg></button>
+                        <button class="btn btn-ghost btn-danger" onclick="deleteInvoice(${inv.id})" title="Удалить счёт"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            const summary = document.getElementById('journalSummary');
+            const totalSum = sorted.reduce((s, inv) => s + (inv.total || 0), 0);
+            const isDefaultMonthView = document.getElementById('journalDateFrom').dataset.auto === '1' && document.getElementById('journalDateTo').dataset.auto === '1' && !search && !statusFilter;
+            const statusCounts = { paid: 0, sent: 0, draft: 0, overdue: 0 };
+            sorted.forEach(inv => { statusCounts[inv.status] = (statusCounts[inv.status] || 0) + 1; });
+            const statusLine = `Оплачено: <strong>${statusCounts.paid}</strong> · Ожидает: <strong>${statusCounts.sent + statusCounts.draft}</strong> · Просрочено: <strong>${statusCounts.overdue}</strong>`;
+            summary.style.display = 'flex';
+            summary.innerHTML = `<span>Найдено: <strong>${sorted.length}</strong></span><span>Сумма: <strong>${formatNumber(totalSum)} ₽</strong></span><span>${statusLine}</span>${isDefaultMonthView ? '<span style="color: var(--text-muted);">Показаны счета за текущий месяц</span>' : ''}`;
+        }
+
+        function clearJournalFilters() {
+            document.getElementById('journalSearch').value = '';
+            const dateFrom = document.getElementById('journalDateFrom');
+            const dateTo = document.getElementById('journalDateTo');
+            document.getElementById('journalStatusFilter').value = '';
+            const range = currentMonthRange();
+            dateFrom.value = range.from; dateFrom.dataset.auto = '1';
+            dateTo.value = range.to; dateTo.dataset.auto = '1';
+            filterJournal();
+        }
+
+        function openInvoiceAction(id) {
+            viewingInvoiceId = id;
+            document.getElementById('actionModal').classList.add('active');
+        }
+
+        function closeActionModal() { document.getElementById('actionModal').classList.remove('active'); viewingInvoiceId = null; }
+        function actionEditInvoice() { const id = viewingInvoiceId; closeActionModal(); loadInvoiceIntoForm(id, true); }
+        function actionCopyInvoice() { const id = viewingInvoiceId; closeActionModal(); loadInvoiceIntoForm(id, false); }
+
+        function loadInvoiceIntoForm(id, isEdit) {
+            const history = loadJSON(STORAGE_KEYS.history, []);
+            const inv = history.find(i => i.id === id);
+            if (!inv) return;
+
+            editingInvoiceId = isEdit ? inv.id : null;
+            document.getElementById('invoiceNumber').value = isEdit ? inv.number : (parseInt(safeGet(STORAGE_KEYS.nextNumber) || '1'));
+            document.getElementById('invoiceDate').value = inv.date;
+            document.getElementById('counterparty').value = inv.counterpartyId || '';
+            document.getElementById('basis').value = inv.basis || '';
+            document.getElementById('signer').value = inv.signer || '';
+            populateBasisList(inv.counterpartyId);
+            document.getElementById('serviceMonth').value = inv.month;
+            document.getElementById('serviceYear').value = inv.year;
+            document.getElementById('vatType').value = inv.vatType || 'none';
+
+            document.getElementById('positionsBody').innerHTML = '';
+            if (inv.positions && inv.positions.length) inv.positions.forEach(pos => addPosition(pos));
+            else addPosition();
+
+            renderPreview();
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-page="new-invoice"]').classList.add('active');
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('new-invoice').classList.add('active');
+            showNotification(isEdit ? 'Редактирование счёта' : 'Создание копии счёта', 'info');
+        }
+
+        function deleteInvoice(id) {
+            if (!confirm('Удалить счёт?')) return;
+            saveJSON(STORAGE_KEYS.history, loadJSON(STORAGE_KEYS.history, []).filter(i => i.id !== id));
+            renderJournal();
+            showNotification('Счёт удалён', 'success');
+        }
+
+        // ===== БЫСТРЫЕ ДЕЙСТВИЯ ИЗ ЖУРНАЛА =====
+
+        function renderInvoiceForExport(inv) {
+            const supplier = inv.supplier || loadJSON(STORAGE_KEYS.supplier, {});
+            const cpList = loadJSON(STORAGE_KEYS.counterparties, []);
+            const cp = cpList.find(c => c.id === inv.counterpartyId) || {};
+
+            const items = (inv.positions || []).map((pos, i) => ({
+                num: i + 1, name: pos.name || '', qty: pos.qty || 0,
+                unit: pos.unit || 'шт.', price: pos.price || 0, sum: (pos.qty || 0) * (pos.price || 0)
+            }));
+
+            let totalSum = items.reduce((s, item) => s + item.sum, 0);
+            let vatAmount = 0, totalWithVat = totalSum;
+            if (inv.vatType === '20') {
+                vatAmount = Math.round(totalSum * 0.2 * 100) / 100;
+                totalWithVat = Math.round((totalSum + vatAmount) * 100) / 100;
+            }
+
+            let html = `
+                <div class="invoice-title">Счёт на оплату № ${esc(inv.number)} от ${formatDate(inv.date)} г.</div>
+                <div class="bank-block">
+                    <table>
+                        <colgroup><col class="bc-label"><col class="bc-value"><col class="bc-label"><col class="bc-value"></colgroup>
+                        <tr><td class="bl">Банк получателя</td><td class="bacc" colspan="3">${esc(supplier.bank || '')}</td></tr>
+                        <tr><td class="bl">БИК</td><td class="bv">${esc(supplier.bik || '')}</td><td class="bl">Сч. №</td><td class="bv">${esc(supplier.corr || '')}</td></tr>
+                        <tr><td class="bl">ИНН</td><td class="bv">${esc(supplier.inn || '')}</td><td class="bl">КПП</td><td class="bv">${esc(supplier.kpp || '')}</td></tr>
+                        <tr><td class="bl">Сч. №</td><td class="bacc" colspan="3">${esc(supplier.account || '')}</td></tr>
+                        <tr><td class="bl">Получатель</td><td class="bacc" colspan="3">${esc(supplier.name || '')}</td></tr>
+                    </table>
+                </div>
+                <div class="parties-block">
+                    <div class="party-row"><span class="party-label">Поставщик (Исполнитель):</span><span class="party-value">${esc(supplier.name || '')}, ИНН ${esc(supplier.inn || '')}, КПП ${esc(supplier.kpp || '')}, ${esc(supplier.address || '')}</span></div>
+                    <div class="party-row"><span class="party-label">Покупатель (Заказчик):</span><span class="party-value">${cp.name ? esc(cp.name) : '—'}, ${cp.address ? esc(cp.address) : ''}${cp.ogrn ? `, ОГРН ${esc(cp.ogrn)}` : ''}, ИНН/КПП ${cp.inn || '—'}/${cp.kpp || '—'}</span></div>
+                </div>
+                <div class="basis-block">Основание: ${esc(inv.basis || '—')}</div>
+                <div class="invoice-table-wrap"><table class="invoice-table"><thead><tr><th style="width:5%;text-align:center;">№</th><th style="width:53%">Товары (работы, услуги)</th><th style="width:7%;text-align:center;">Кол-во</th><th style="width:7%;text-align:center;">Ед.</th><th style="width:12%;text-align:right;">Цена</th><th style="width:12%;text-align:right;">Сумма</th></tr></thead><tbody>`;
+            items.forEach(item => { html += `<tr><td style="text-align:center;">${item.num}</td><td>${esc(item.name)}</td><td style="text-align:center;">${item.qty}</td><td style="text-align:center;">${esc(item.unit)}</td><td style="text-align:right;">${formatNumber(item.price)}</td><td style="text-align:right;">${formatNumber(item.sum)}</td></tr>`; });
+            html += `</tbody></table></div><div class="invoice-totals"><p>Итого: ${formatNumber(totalSum)}</p>`;
+            html += inv.vatType === '20' ? `<p>НДС 20%: ${formatNumber(vatAmount)}</p>` : `<p>Без налога (НДС): —</p>`;
+            html += `<p class="total-line">Всего к оплате: ${formatNumber(totalWithVat)}</p></div>
+                <div class="invoice-words">Всего наименований ${items.length}, на сумму ${formatNumber(totalWithVat)} руб.<br>${numberToWords(totalWithVat)}</div>
+                <div class="invoice-signatures">
+                    <div class="signature-block"><div class="signature-label">Руководитель</div><div class="signature-line"><span class="signature-dash"></span><span class="signature-name">${esc(supplier.director || '')}</span></div></div>
+                    <div class="signature-block"><div class="signature-label">Бухгалтер</div><div class="signature-line"><span class="signature-dash"></span><span class="signature-name">${esc(supplier.accountant || '')}</span></div></div>
+                </div>`;
+
+            return { html, totalWithVat, items, supplier, cp, month: inv.month, year: inv.year };
+        }
+
+        function quickPrintInvoice(id) {
+            const inv = loadJSON(STORAGE_KEYS.history, []).find(i => i.id === id);
+            if (!inv) return;
+            const { html } = renderInvoiceForExport(inv);
+            const printArea = document.getElementById('printArea');
+            // Та же обёртка .invoice-preview, что и в printInvoice() — без неё
+            // печатные CSS-правила не применяются и счёт уходит на 2 страницы.
+            printArea.innerHTML = `<div class="invoice-preview">${html}</div>`;
+            printArea.style.display = 'block';
+            window.print();
+            setTimeout(() => { printArea.style.display = 'none'; }, 1000);
+        }
+
+        async function quickPdfInvoice(id) {
+            const inv = loadJSON(STORAGE_KEYS.history, []).find(i => i.id === id);
+            if (inv) await generatePdfFromInvoice(inv);
+        }
+
+        async function quickExcelInvoice(id) {
+            const inv = loadJSON(STORAGE_KEYS.history, []).find(i => i.id === id);
+            if (inv) await generateExcelFromInvoice(inv);
+        }
+
+        // ===== НАСТРОЙКИ =====
+
+        function loadSettings() {
+            const s = loadJSON(STORAGE_KEYS.supplier, {});
+            document.getElementById('orgName').value = s.name || '';
+            document.getElementById('orgInn').value = s.inn || '';
+            document.getElementById('orgKpp').value = s.kpp || '';
+            document.getElementById('orgAddress').value = s.address || '';
+            document.getElementById('orgDirector').value = s.director || '';
+            document.getElementById('orgAccountant').value = s.accountant || '';
+            document.getElementById('bankName').value = s.bank || '';
+            document.getElementById('bankBik').value = s.bik || '';
+            document.getElementById('bankCorr').value = s.corr || '';
+            document.getElementById('bankAccount').value = s.account || '';
+            document.getElementById('nextInvoiceNumber').value = safeGet(STORAGE_KEYS.nextNumber) || '1';
+        }
+
+        function saveSettings() {
+            const supplier = {
+                name: document.getElementById('orgName').value.trim(),
+                inn: document.getElementById('orgInn').value.trim(),
+                kpp: document.getElementById('orgKpp').value.trim(),
+                address: document.getElementById('orgAddress').value.trim(),
+                director: document.getElementById('orgDirector').value.trim(),
+                accountant: document.getElementById('orgAccountant').value.trim(),
+                bank: document.getElementById('bankName').value.trim(),
+                bik: document.getElementById('bankBik').value.trim(),
+                corr: document.getElementById('bankCorr').value.trim(),
+                account: document.getElementById('bankAccount').value.trim()
+            };
+            saveJSON(STORAGE_KEYS.supplier, supplier);
+            const nextNum = document.getElementById('nextInvoiceNumber').value;
+            if (nextNum && parseInt(nextNum) > 0) safeSet(STORAGE_KEYS.nextNumber, nextNum);
+            showNotification('Настройки сохранены', 'success');
+            renderPreview();
+        }
+
+        function exportSettings() {
+            const data = {
+                supplier: loadJSON(STORAGE_KEYS.supplier, {}),
+                counterparties: loadJSON(STORAGE_KEYS.counterparties, []),
+                nextNumber: safeGet(STORAGE_KEYS.nextNumber) || '1',
+                history: loadJSON(STORAGE_KEYS.history, []),
+                exportDate: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `patronus_settings_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Настройки экспортированы', 'success');
+        }
+
+        function importSettings(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.supplier) saveJSON(STORAGE_KEYS.supplier, data.supplier);
+                    if (data.counterparties) saveJSON(STORAGE_KEYS.counterparties, data.counterparties);
+                    if (data.nextNumber) safeSet(STORAGE_KEYS.nextNumber, data.nextNumber);
+                    if (data.history) saveJSON(STORAGE_KEYS.history, data.history);
+                    loadSettings();
+                    loadCounterparties();
+                    resetForm();
+                    renderPreview();
+                    showNotification('Настройки импортированы', 'success');
+                } catch { showNotification('Ошибка чтения файла', 'error'); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ===== ЭКСПОРТ =====
+
+        function printInvoice() {
+            const printArea = document.getElementById('printArea');
+            // ВАЖНО: оборачиваем в .invoice-preview — именно на этот класс
+            // навешаны все правила @media print (компактные шрифты/отступы
+            // под A4). Без обёртки применяются экранные размеры, и счёт
+            // не помещается на один печатный лист.
+            printArea.innerHTML = `<div class="invoice-preview">${document.getElementById('invoicePreview').innerHTML}</div>`;
+            printArea.style.display = 'block';
+            window.print();
+            setTimeout(() => { printArea.style.display = 'none'; }, 1000);
+        }
+
+        async function downloadPDF() { await generatePdfFromInvoice(createCurrentInvoiceData()); }
+
+        async function generatePdfFromInvoice(inv) {
+            const printArea = document.getElementById('printArea');
+            const { html } = renderInvoiceForExport(inv);
+            printArea.innerHTML = `<div class="invoice-preview" style="position:absolute;left:-9999px;top:0;">${html}</div>`;
+            printArea.style.display = 'block';
+            const el = printArea.querySelector('.invoice-preview');
+
+            try {
+                if (window.html2canvas && window.jspdf) {
+                    const canvas = await html2canvas(el, { scale: 2, useCORS: true, letterRendering: true });
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                    if (pdfHeight <= pageHeight) {
+                        // Обычный случай: короткий счёт помещается на 1 лист A4 — печатаем как есть.
+                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    } else {
+                        // Контент выше одного листа — режем canvas на полосы по высоте
+                        // страницы и кладём каждую полосу на отдельный лист PDF,
+                        // вместо того чтобы молча обрезать низ документа (подписи).
+                        const pageCanvasHeightPx = Math.floor((pageHeight * canvas.width) / pdfWidth);
+                        let renderedHeightPx = 0;
+                        let pageIndex = 0;
+                        while (renderedHeightPx < canvas.height) {
+                            const sliceHeightPx = Math.min(pageCanvasHeightPx, canvas.height - renderedHeightPx);
+                            const sliceCanvas = document.createElement('canvas');
+                            sliceCanvas.width = canvas.width;
+                            sliceCanvas.height = sliceHeightPx;
+                            const ctx = sliceCanvas.getContext('2d');
+                            ctx.drawImage(canvas, 0, renderedHeightPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+                            const sliceImgData = sliceCanvas.toDataURL('image/png');
+                            const sliceHeightMm = (sliceHeightPx * pdfWidth) / canvas.width;
+                            if (pageIndex > 0) pdf.addPage();
+                            pdf.addImage(sliceImgData, 'PNG', 0, 0, pdfWidth, sliceHeightMm);
+                            renderedHeightPx += sliceHeightPx;
+                            pageIndex++;
+                        }
+                    }
+                    pdf.save(buildFilename(inv, '.pdf'));
+                } else {
+                    printArea.innerHTML = html;
+                    showNotification('Выберите «Сохранить как PDF» в диалоге печати', 'info');
+                    window.print();
+                }
+            } catch (err) {
+                console.error('PDF error:', err);
+                showNotification('Ошибка генерации PDF', 'error');
+            }
+
+            printArea.style.display = 'none';
+            printArea.innerHTML = '';
+            if (window.html2canvas && window.jspdf) showNotification('PDF сохранён', 'success');
+        }
+
+        async function downloadExcel() { await generateExcelFromInvoice(createCurrentInvoiceData()); }
+
+        function createCurrentInvoiceData() {
+            const cpId = parseInt(document.getElementById('counterparty').value);
+            const cpList = loadJSON(STORAGE_KEYS.counterparties, []);
+            const cp = cpList.find(c => c.id === cpId) || {};
+            return {
+                number: document.getElementById('invoiceNumber').value,
+                date: document.getElementById('invoiceDate').value,
+                counterpartyId: cpId, counterpartyName: cp.name || '',
+                month: parseInt(document.getElementById('serviceMonth').value),
+                year: parseInt(document.getElementById('serviceYear').value),
+                total: calculateTotal(),
+                vatType: document.getElementById('vatType').value,
+                basis: document.getElementById('basis').value,
+                signer: document.getElementById('signer').value,
+                positions: getCurrentPositions(),
+                supplier: loadJSON(STORAGE_KEYS.supplier, {})
+            };
+        }
+
+// ============================================================================
+// НОВЫЙ ПОДХОД: заполнение реального .xlsx-ШАБЛОНА (взят из эталонного счёта
+// №96, сделанного вручную в 1С/Excel) вместо сборки листа с нуля координатами.
+//
+// Почему так надёжнее:
+//  - Старый код вручную считал 44 колонки и десятки merge-диапазонов —
+//    одна ошибка в индексе рушила всю раскладку (то, что было на фото).
+//  - xlsx-js-style при ЧТЕНИИ существующего файла не восстанавливает стили
+//    (проверено: после round-trip шрифты/рамки/fitToPage слетают), поэтому
+//    "прочитать шаблон библиотекой и переписать" тоже не работает.
+//  - Рабочий способ: .xlsx — это ZIP c XML внутри. Меняем ТОЛЬКО текстовые
+//    узлы нужных ячеек прямо в XML (через JSZip, которая уже подключена
+//    в этом файле), не пропуская остальной архив ни через один парсер.
+//    Все стили, границы, шрифты, ширины колонок и настройка "печать на
+//    1 лист A4" (fitToPage) остаются БАЙТ В БАЙТ как в эталонном файле.
+// ============================================================================
+
+// ВАЖНО: шаблон встроен прямо в этот файл как base64, а НЕ подгружается через
+// fetch('invoice_template.xlsx'). Причина: при открытии HTML двойным кликом
+// (протокол file://) браузеры блокируют fetch к соседним локальным файлам
+// (CORS/Same-Origin для file:// работает иначе, чем для http://) — именно
+// поэтому раньше падала ошибка "Load failed". Встроенный base64 работает
+// всегда, независимо от того, как открыт файл и лежит ли рядом что-то ещё.
+const EXCEL_TEMPLATE_BASE64 = "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";
+const EXCEL_TEMPLATE_SHEET_PATH = 'xl/worksheets/sheet1.xml';
+
+function base64ToArrayBuffer(base64) {
+    const binaryStr = atob(base64);
+    const len = binaryStr.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binaryStr.charCodeAt(i);
+    return bytes.buffer;
+}
+
+function escapeXml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+// Заменяет текстовое значение inlineStr-ячейки по имени плейсхолдера,
+// не трогая атрибут стиля (s="...") и вообще ничего вокруг.
+function setTextPlaceholder(xml, placeholder, value) {
+    const safe = escapeXml(value != null ? String(value) : '');
+    // Плейсхолдер всегда лежит внутри <is><t>{{NAME}}</t></is> —
+    // заменяем содержимое <t>...</t>, которое совпадает с самим плейсхолдером.
+    const needle = `<t>${placeholder}</t>`;
+    if (xml.indexOf(needle) === -1) {
+        console.warn('Excel template: placeholder not found:', placeholder);
+        return xml;
+    }
+    return xml.split(needle).join(`<t xml:space="preserve">${safe}</t>`);
+}
+
+// Заменяет ЯЧЕЙКУ ЦЕЛИКОМ с текстовым плейсхолдером на числовую ячейку
+// (t="n", <v>число</v>), сохраняя тот же индекс стиля s="...".
+// Нужно для полей, участвующих в формулах Excel (цена, кол-во, № позиции).
+function setNumericPlaceholder(xml, cellAddr, placeholder, numValue) {
+    const re = new RegExp(
+        `<c r="${cellAddr}"([^>]*)t="inlineStr"><is><t>${placeholder}</t></is></c>`
+    );
+    const m = xml.match(re);
+    if (!m) {
+        console.warn('Excel template: numeric placeholder not found:', cellAddr, placeholder);
+        return xml;
+    }
+    // m[1] содержит остальные атрибуты тега (обычно только s="NN")
+    const attrsWithoutT = m[1];
+    const replacement = `<c r="${cellAddr}"${attrsWithoutT}t="n"><v>${numValue}</v></c>`;
+    return xml.replace(m[0], replacement);
+}
+
+async function loadExcelTemplateZip() {
+    const buf = base64ToArrayBuffer(EXCEL_TEMPLATE_BASE64);
+    return await JSZip.loadAsync(buf);
+}
+
+async function generateExcelFromInvoice(inv) {
+    try {
+        const supplier = inv.supplier || loadJSON(STORAGE_KEYS.supplier, {});
+        const cpList = loadJSON(STORAGE_KEYS.counterparties, []);
+        const cp = cpList.find(c => c.id === inv.counterpartyId) || {};
+
+        const items = (inv.positions || []).map((pos, i) => ({
+            num: i + 1, name: pos.name || '', qty: pos.qty || 0,
+            unit: pos.unit || 'шт.', price: pos.price || 0, sum: (pos.qty || 0) * (pos.price || 0)
+        }));
+
+        if (items.length === 0) {
+            showNotification('Добавьте хотя бы одну позицию перед экспортом', 'error');
+            return;
+        }
+        if (items.length > 1) {
+            // Шаблон сейчас рассчитан на 1 позицию (как в 100% реальных счетов
+            // пользователя). Многопозиционные счета — редкий случай; не рискуем
+            // молча всё сломать вставкой строк, честно предупреждаем.
+            showNotification('Шаблон Excel сейчас поддерживает только 1 позицию в счёте. Для нескольких позиций используйте печать/PDF.', 'error');
+            return;
+        }
+        const item = items[0];
+
+        let totalSum = items.reduce((s, it) => s + it.sum, 0);
+        let vatAmount = 0, totalWithVat = totalSum;
+        if (inv.vatType === '20') {
+            vatAmount = Math.round(totalSum * 0.2 * 100) / 100;
+            totalWithVat = Math.round((totalSum + vatAmount) * 100) / 100;
+        }
+
+        const supplierLine = (supplier.name || '') + ', ИНН ' + (supplier.inn || '') + ', КПП ' + (supplier.kpp || '') + ', ' + (supplier.address || '');
+        const buyerLine = (cp.name || '—') + ', ' + (cp.address || '') + (cp.ogrn ? ', ОГРН ' + cp.ogrn : '') + ', ИНН/КПП ' + (cp.inn || '—') + '/' + (cp.kpp || '—');
+        const title = 'Счет на оплату № ' + (inv.number || '') + ' от ' + formatDate(inv.date) + ' г.';
+        const itemsSummary = 'Всего наименований ' + items.length + ', на сумму ' + formatNumber(totalWithVat) + ' руб.';
+        const sumInWords = numberToWords(totalWithVat);
+        const vatLabel = inv.vatType === '20' ? 'НДС 20%:' : 'Без налога (НДС)';
+        const vatValue = inv.vatType === '20' ? formatNumber(vatAmount) : '-';
+
+        const zip = await loadExcelTemplateZip();
+        const sheetFile = zip.file(EXCEL_TEMPLATE_SHEET_PATH);
+        if (!sheetFile) throw new Error('Шаблон повреждён: не найден ' + EXCEL_TEMPLATE_SHEET_PATH);
+        let xml = await sheetFile.async('string');
+
+        // --- Текстовые поля ---
+        xml = setTextPlaceholder(xml, '{{TITLE}}', title);
+        xml = setTextPlaceholder(xml, '{{SUPPLIER_LINE}}', supplierLine);
+        xml = setTextPlaceholder(xml, '{{BUYER}}', buyerLine);
+        xml = setTextPlaceholder(xml, '{{BASIS}}', inv.basis || '—');
+        xml = setTextPlaceholder(xml, '{{ITEM_NAME}}', item.name);
+        xml = setTextPlaceholder(xml, '{{ITEM_UNIT}}', item.unit);
+        xml = setTextPlaceholder(xml, '{{VAT_LABEL}}', vatLabel);
+        xml = setTextPlaceholder(xml, '{{VAT_VALUE}}', vatValue);
+        xml = setTextPlaceholder(xml, '{{ITEMS_SUMMARY}}', itemsSummary);
+        xml = setTextPlaceholder(xml, '{{SUM_IN_WORDS}}', sumInWords);
+        xml = setTextPlaceholder(xml, '{{DIRECTOR}}', supplier.director || '');
+        xml = setTextPlaceholder(xml, '{{ACCOUNTANT}}', supplier.accountant || '');
+
+        // --- Числовые поля (нужны как t="n", чтобы формулы Excel работали) ---
+        xml = setNumericPlaceholder(xml, 'B23', '{{ITEM_NUM}}', item.num);
+        xml = setNumericPlaceholder(xml, 'Z23', '{{ITEM_QTY}}', item.qty);
+        xml = setNumericPlaceholder(xml, 'AF23', '{{ITEM_PRICE}}', item.price);
+        // AK23 (=AF23), AL25 (=AF23), AL27 (=AK23) — формулы уже в шаблоне,
+        // Excel сам их пересчитает при открытии файла.
+
+        zip.file(EXCEL_TEMPLATE_SHEET_PATH, xml);
+        const blob = await zip.generateAsync({
+            type: 'blob',
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        downloadBlob(blob, buildFilename(inv, '.xlsx'));
+        showNotification('Excel сохранён', 'success');
+    } catch (e) {
+        console.error('Excel export error:', e);
+        showNotification('Ошибка экспорта: ' + e.message, 'error');
+    }
+}
+
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+
+        function buildFilename(inv, ext) {
+            const num = inv.number || '0';
+            const cpName = (inv.counterpartyName || 'без_покупателя').replace(/[^а-яА-Яa-zA-Z0-9]/g, '_');
+            return `Счет_на_оплату_№${num}_${cpName}_${MONTHS_NOMINATIVE[inv.month] || ''}_${inv.year || ''}${ext}`;
+        }
+
+        function exportJournalToExcel() {
+            const history = loadJSON(STORAGE_KEYS.history, []);
+            if (!history.length) { showNotification('Журнал пуст', 'info'); return; }
+            const wsData = [['Журнал счетов — ООО «ПАТРОНУС»'], [], ['№ счёта', 'Дата', 'Покупатель', 'Сумма', 'Месяц услуг', 'Статус', 'Основание']];
+            history.sort((a, b) => (a.date || '').localeCompare(b.date || '')).forEach(inv => {
+                const statusLabel = INVOICE_STATUSES[normalizeInvoiceStatus(inv.status)].label;
+                wsData.push([inv.number, formatDate(inv.date), inv.counterpartyName || '', inv.total || 0, (MONTHS_GENITIVE[inv.month] || '') + ' ' + (inv.year || ''), statusLabel, inv.basis || '']);
+            });
+            const totalSum = history.reduce((s, inv) => s + (inv.total || 0), 0);
+            wsData.push([], ['', '', 'ИТОГО:', totalSum, '', '', '']);
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            ws['!cols'] = [{ wch: 10 }, { wch: 14 }, { wch: 35 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 25 }];
+            XLSX.utils.book_append_sheet(wb, ws, 'Журнал');
+            XLSX.writeFile(wb, `Журнал_счетов_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showNotification('Журнал экспортирован', 'success');
+        }
+
+        // ===== ВСПОМОГАТЕЛЬНЫЕ =====
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '—.__.____';
+            const p = dateStr.split('-');
+            return `${p[2]}.${p[1]}.${p[0]}`;
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        }
+
+        function esc(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type) {
+            type = type || 'success';
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            toast.title = 'Нажмите, чтобы закрыть';
+            toast.addEventListener('click', () => removeToast(toast));
+            container.appendChild(toast);
+            setTimeout(() => removeToast(toast), 4000);
+        }
+
+        function removeToast(toast) {
+            if (toast.classList.contains('removing')) return;
+            toast.classList.add('removing');
+            setTimeout(() => toast.remove(), 300);
+        }
+
+        // ===== СУММА ПРОПИСЬЮ =====
+
+        function numberToWords(num) {
+            if (num === 0) return 'Ноль рублей 00 копеек';
+
+            const ones = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+            const onesF = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+            const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+            const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+            const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+            function group(n, fem) {
+                let r = '';
+                if (n >= 100) { r += hundreds[Math.floor(n / 100)] + ' '; n %= 100; }
+                if (n >= 20) { r += tens[Math.floor(n / 10)] + ' '; n %= 10; }
+                else if (n >= 10) return r + teens[n - 10] + ' ';
+                if (n > 0) r += (fem ? onesF : ones)[n] + ' ';
+                return r;
+            }
+
+            function rubForm(n) {
+                const l2 = n % 100, l1 = n % 10;
+                if (l2 >= 11 && l2 <= 19) return 'рублей';
+                if (l1 === 1) return 'рубль';
+                if (l1 >= 2 && l1 <= 4) return 'рубля';
+                return 'рублей';
+            }
+
+            function kopForm(n) {
+                if (n === 0) return 'копеек';
+                const l2 = n % 100, l1 = n % 10;
+                if (l2 >= 11 && l2 <= 19) return 'копеек';
+                if (l1 === 1) return 'копейка';
+                if (l1 >= 2 && l1 <= 4) return 'копейки';
+                return 'копеек';
+            }
+
+            function intForm(n, word, f1, f23, f5) {
+                if (n === 0) return '';
+                const l2 = n % 100, l1 = n % 10;
+                let s = f5;
+                if (l2 >= 11 && l2 <= 19) s = f5;
+                else if (l1 === 1) s = f1;
+                else if (l1 >= 2 && l1 <= 4) s = f23;
+                return group(n >= 1000 ? n % 1000 : n, word === 'тысяч') + word + s + ' ';
+            }
+
+            const rub = Math.floor(num);
+            const kop = Math.round((num - rub) * 100);
+            let result = '';
+
+            if (rub >= 1000000000) result += intForm(Math.floor(rub / 1000000000), 'миллиард', '', 'а', 'ов');
+            if (rub >= 1000000) result += intForm(Math.floor((rub % 1000000000) / 1000000), 'миллион', '', 'а', 'ов');
+            if (rub >= 1000) result += intForm(Math.floor((rub % 1000000) / 1000), 'тысяч', 'а', 'и', '');
+
+            const rem = rub % 1000;
+            if (rem > 0 || rub === 0) result += group(rem, false);
+
+            result = result.trim() + ' ' + rubForm(rub);
+            result += ' ' + kop.toString().padStart(2, '0') + ' ' + kopForm(kop);
+            return result.charAt(0).toUpperCase() + result.slice(1);
+        }
+
+        // ===== PROGRESS BAR =====
+
+        function updateProgress() {
+            const fields = [
+                document.getElementById('invoiceNumber'),
+                document.getElementById('invoiceDate'),
+                document.getElementById('counterparty'),
+                document.getElementById('basis'),
+                document.getElementById('serviceMonth'),
+                document.getElementById('serviceYear')
+            ];
+            let filled = 0;
+            fields.forEach(f => { if (f && f.value && f.value !== '') filled++; });
+            const positions = document.getElementById('positionsBody').children;
+            if (positions.length > 0) {
+                for (let i = 0; i < positions.length; i++) {
+                    const name = positions[i].querySelector('.pos-name');
+                    const price = positions[i].querySelector('.pos-price');
+                    if (name && name.value.trim()) filled++;
+                    if (price && parseFloat(price.value) > 0) filled++;
+                }
+            }
+            const total = fields.length + (positions.length * 2);
+            const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+            const fill = document.getElementById('progressFill');
+            if (fill) fill.style.width = pct + '%';
+        }
+
+        // ===== COPY TO CLIPBOARD =====
+
+        function copyToClipboard(text, label) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification((label || 'Значение') + ' скопировано', 'success');
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showNotification((label || 'Значение') + ' скопировано', 'success');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+            if (window.lucide) lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

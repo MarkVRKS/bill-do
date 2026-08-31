@@ -1,0 +1,12 @@
+node_modules/
+dist/
+release/
+.mimocode/
+*.asar
+*.asar.unpacked
+.DS_Store
+*.log
+.env
+.env.*
+desktop-standalone/
+desktop-standalone-backup-*/
