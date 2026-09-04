@@ -26,7 +26,7 @@ export function BillingPage() {
 
   async function handleSubscribe(planId: string) {
     try {
-      const res = await api.subscribe(planId);
+      const res = await api.subscribe(planId) as any;
       if (res.paymentUrl) {
         window.location.href = res.paymentUrl;
       } else {

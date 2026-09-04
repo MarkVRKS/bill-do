@@ -3,6 +3,9 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { startGlobalTour } from '../components/Tour';
+import { Filesystem } from '@capacitor/filesystem';
+import { showNotification, isNotificationsEnabled, setNotificationsEnabled } from '../lib/notifications';
+import { downloadBlob } from '../lib/local-docs';
 import './Settings.css';
 
 const LEGAL_FORMS = ['ООО', 'ИП', 'АО (НАО)', 'ПАО', 'КООП', 'ГУП', 'МУП', 'ФЛ', 'СК'];
@@ -35,7 +38,7 @@ function BasisItem({ value, index, onChange, onRemove, canRemove }: {
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="номер и договора, напр. Договор №123 от 01.01.2026"
+            placeholder="Номер и дата договора"
             autoFocus={!value}
           />
         </div>
@@ -87,6 +90,13 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const backupFileInputRef = useRef<HTMLInputElement>(null);
   const [backupDragOver, setBackupDragOver] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('billdo_theme') === 'dark');
+  const [notificationsOn, setNotificationsOn] = useState(() => isNotificationsEnabled());
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('billdo_theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   function showToast(msg: string, type = 'success') {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
@@ -97,6 +107,7 @@ export function SettingsPage() {
     try {
       const res = await api.getActiveOrganization();
       const o = res.organization;
+      if (!o) return;
       setOrg(o);
       setForm({
         name: o.name || '', legalForm: o.legalForm || 'ООО',
@@ -149,7 +160,8 @@ export function SettingsPage() {
       await loadOrgs();
       setShowNewOrgModal(false);
       setNewOrgForm({ name:'', legalForm:'ООО', inn:'', kpp:'', ogrn:'', ogrnip:'', address:'', director:'', accountant:'', bankName:'', bankBik:'', bankCorr:'', bankAccount:'' });
-      showToast('Организация создана');
+      const notif = showNotification('org_created', 'Организация «' + newOrgForm.name + '» создана');
+      if (notif) showToast(notif.msg, notif.type); else showToast('Организация создана');
     } catch (err: any) { showToast(err.message, 'error'); }
   }
 
@@ -179,7 +191,11 @@ export function SettingsPage() {
     if (!cpForm.name) { showToast('Введите название', 'error'); return; }
     try {
       if (editingCp) { await api.updateCounterparty(editingCp.id, cpForm); showToast('Покупатель обновлён'); }
-      else { await api.createCounterparty(cpForm); showToast('Покупатель добавлен'); }
+      else {
+        await api.createCounterparty(cpForm);
+        const notif = showNotification('cp_created', 'Покупатель «' + cpForm.name + '» добавлен');
+        if (notif) showToast(notif.msg, notif.type); else showToast('Покупатель добавлен');
+      }
       setShowCpModal(false); loadCps();
     } catch (err: any) { showToast(err.message, 'error'); }
   }
@@ -196,22 +212,27 @@ export function SettingsPage() {
       showToast('Создание бэкапа...', 'info');
       const orgRes = await api.getOrganizations();
       const cpRes = await api.getCounterparties();
+      const invRes = await api.getInvoices({});
+      // Fetch full invoice details with positions
+      const invoicesFull = [];
+      for (const inv of invRes.invoices) {
+        const full = await api.getInvoice(inv.id);
+        if (full.invoice) invoicesFull.push(full.invoice);
+      }
       const backup = {
-        version: '1.0',
+        version: '2.0',
         exportedAt: new Date().toISOString(),
         organizations: orgRes.organizations,
         counterparties: cpRes.counterparties,
+        invoices: invoicesFull,
       };
       const json = JSON.stringify(backup, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
       const dateStr = new Date().toISOString().slice(0, 10);
-      const filename = `Билдо_бэкап_настроек_${dateStr}.json`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('Бэкап сохранён');
+      const filename = `Билл-до_бэкап_${dateStr}.json`;
+      await downloadBlob(blob, filename);
+      const notif = showNotification('backup_created');
+      if (notif) showToast(notif.msg, notif.type); else showToast('Бэкап сохранён');
     } catch (err: any) { showToast(err.message || 'Ошибка экспорта', 'error'); }
   }
 
@@ -236,30 +257,59 @@ export function SettingsPage() {
       showToast('Импорт данных...', 'info');
       const existingOrgs = await api.getOrganizations();
       const existingCps = await api.getCounterparties();
-      const existingOrgNames = new Set(existingOrgs.organizations.map((o: any) => `${o.name}|${o.inn || ''}`));
-      const existingCpNames = new Set(existingCps.counterparties.map((cp: any) => cp.name));
+      const orgIdMap: Record<string, string> = {};
+      const cpIdMap: Record<string, string> = {};
       let orgsImported = 0;
       let cpsImported = 0;
+      let invoicesImported = 0;
       if (backup.organizations) {
         for (const orgData of backup.organizations) {
           const key = `${orgData.name}|${orgData.inn || ''}`;
-          if (!existingOrgNames.has(key)) {
-            await api.createOrganization(orgData);
+          const existing = existingOrgs.organizations.find((o: any) => `${o.name}|${o.inn || ''}` === key);
+          if (existing) {
+            orgIdMap[orgData.id] = existing.id;
+          } else {
+            const res = await api.createOrganization(orgData) as any;
+            if (res.organization) orgIdMap[orgData.id] = res.organization.id;
             orgsImported++;
           }
         }
       }
       if (backup.counterparties) {
         for (const cpData of backup.counterparties) {
-          if (!existingCpNames.has(cpData.name)) {
-            await api.createCounterparty(cpData);
+          const existing = existingCps.counterparties.find((c: any) => c.name === cpData.name);
+          if (existing) {
+            cpIdMap[cpData.id] = existing.id;
+          } else {
+            const res = await api.createCounterparty(cpData) as any;
+            if (res.counterparty) cpIdMap[cpData.id] = res.counterparty.id;
             cpsImported++;
           }
         }
       }
+      if (backup.invoices && backup.invoices.length > 0) {
+        for (const inv of backup.invoices) {
+          try {
+            const mappedCpId = cpIdMap[inv.counterpartyId] || inv.counterpartyId;
+            await api.createInvoice({
+              number: inv.number, date: inv.date, counterpartyId: mappedCpId,
+              bases: inv.bases || [], serviceMonth: inv.serviceMonth, serviceYear: inv.serviceYear,
+              vatType: inv.vatType, status: inv.status || 'sent',
+              positions: (inv.positions || []).map((p: any) => ({ name: p.name, quantity: p.quantity, unit: p.unit, price: p.price })),
+            });
+            invoicesImported++;
+          } catch (e) { console.warn('Skip invoice', inv.number, e); }
+        }
+      }
       await loadOrgs();
       await loadCps();
-      showToast(`Импортировано: ${orgsImported} организаций, ${cpsImported} покупателей`);
+      const parts = [];
+      if (orgsImported) parts.push(`${orgsImported} организаций`);
+      if (cpsImported) parts.push(`${cpsImported} покупателей`);
+      if (invoicesImported) parts.push(`${invoicesImported} счетов`);
+      const msg = parts.length > 0 ? `Импортировано: ${parts.join(', ')}` : 'Все данные уже есть в системе';
+      const notif = showNotification('backup_loaded', msg);
+      if (notif) showToast(notif.msg, notif.type); else showToast(msg);
     } catch (err: any) {
       showToast(err.message || 'Ошибка импорта', 'error');
     }
@@ -276,30 +326,70 @@ export function SettingsPage() {
       showToast('Импорт данных...', 'info');
       const existingOrgs = await api.getOrganizations();
       const existingCps = await api.getCounterparties();
-      const existingOrgNames = new Set(existingOrgs.organizations.map((o: any) => `${o.name}|${o.inn || ''}`));
-      const existingCpNames = new Set(existingCps.counterparties.map((cp: any) => cp.name));
+      // ID mapping: old ID → new ID
+      const orgIdMap: Record<string, string> = {};
+      const cpIdMap: Record<string, string> = {};
       let orgsImported = 0;
       let cpsImported = 0;
+      let invoicesImported = 0;
       if (backup.organizations) {
         for (const orgData of backup.organizations) {
           const key = `${orgData.name}|${orgData.inn || ''}`;
-          if (!existingOrgNames.has(key)) {
-            await api.createOrganization(orgData);
+          const existing = existingOrgs.organizations.find((o: any) => `${o.name}|${o.inn || ''}` === key);
+          if (existing) {
+            orgIdMap[orgData.id] = existing.id;
+          } else {
+            const res = await api.createOrganization(orgData) as any;
+            if (res.organization) orgIdMap[orgData.id] = res.organization.id;
             orgsImported++;
           }
         }
       }
       if (backup.counterparties) {
         for (const cpData of backup.counterparties) {
-          if (!existingCpNames.has(cpData.name)) {
-            await api.createCounterparty(cpData);
+          const existing = existingCps.counterparties.find((c: any) => c.name === cpData.name);
+          if (existing) {
+            cpIdMap[cpData.id] = existing.id;
+          } else {
+            const res = await api.createCounterparty(cpData) as any;
+            if (res.counterparty) cpIdMap[cpData.id] = res.counterparty.id;
             cpsImported++;
+          }
+        }
+      }
+      // Import invoices with mapped IDs
+      if (backup.invoices && backup.invoices.length > 0) {
+        for (const inv of backup.invoices) {
+          try {
+            const mappedCpId = cpIdMap[inv.counterpartyId] || inv.counterpartyId;
+            await api.createInvoice({
+              number: inv.number,
+              date: inv.date,
+              counterpartyId: mappedCpId,
+              bases: inv.bases || [],
+              serviceMonth: inv.serviceMonth,
+              serviceYear: inv.serviceYear,
+              vatType: inv.vatType,
+              status: inv.status || 'sent',
+              positions: (inv.positions || []).map((p: any) => ({
+                name: p.name, quantity: p.quantity, unit: p.unit, price: p.price,
+              })),
+            });
+            invoicesImported++;
+          } catch (e) {
+            console.warn('Skip invoice', inv.number, e);
           }
         }
       }
       await loadOrgs();
       await loadCps();
-      showToast(`Импортировано: ${orgsImported} организаций, ${cpsImported} покупателей`);
+      const parts = [];
+      if (orgsImported) parts.push(`${orgsImported} организаций`);
+      if (cpsImported) parts.push(`${cpsImported} покупателей`);
+      if (invoicesImported) parts.push(`${invoicesImported} счетов`);
+      const msg = parts.length > 0 ? `Импортировано: ${parts.join(', ')}` : 'Все данные уже есть в системе';
+      const notif = showNotification('backup_loaded', msg);
+      if (notif) showToast(notif.msg, notif.type); else showToast(msg);
     } catch (err: any) {
       showToast(err.message || 'Ошибка импорта', 'error');
     }
@@ -409,23 +499,29 @@ export function SettingsPage() {
               <label>Папка для скачивания счетов</label>
               <div className="download-path-row">
                 <input value={form.downloadPath} onChange={(e) => setForm({...form, downloadPath: e.target.value})} placeholder="Например: ~/Documents/Счета" className="download-path-input" />
-                {(window as any).electronAPI?.isElectron ? (
-                  <button className="btn btn-sm btn-secondary" onClick={async () => {
+                <button className="btn btn-sm btn-secondary" onClick={async () => {
+                  if ((window as any).electronAPI?.isElectron) {
                     const folder = await (window as any).electronAPI.selectFolder();
                     if (folder) {
                       setForm({...form, downloadPath: folder});
                       showToast('Папка выбрана');
                     }
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                    Выбрать
-                  </button>
-                ) : (
-                  <button className="btn btn-sm btn-secondary" onClick={() => { setForm({...form, downloadPath: '~/Documents/Счета'}); showToast('Установлен путь по умолчанию'); }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                    Выбрать
-                  </button>
-                )}
+                  } else {
+                    try {
+                      const result = await (Filesystem as any).pickDirectory();
+                      if (result?.path) {
+                        setForm({...form, downloadPath: result.path});
+                        showToast('Папка выбрана');
+                      }
+                    } catch {
+                      setForm({...form, downloadPath: 'Download/Билл-до'});
+                      showToast('Установлена папка загрузок');
+                    }
+                  }
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                  Выбрать
+                </button>
               </div>
               <span className="form-hint">Если не заполнено — файлы скачиваются в папку «Загрузки»</span>
             </div>
@@ -479,6 +575,60 @@ export function SettingsPage() {
               <button id="tour-replay" className="btn btn-secondary" style={{width:'100%'}} onClick={startGlobalTour}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                 Показать гайд заново
+              </button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header"><h3>Тема оформления</h3></div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
+              <span style={{ fontSize: 14, color: 'var(--text)' }}>{darkMode ? 'Тёмная тема' : 'Светлая тема'}</span>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                style={{
+                  width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                  background: darkMode ? 'var(--accent-ink)' : 'var(--border-strong)',
+                  position: 'relative', transition: 'background 0.3s'
+                }}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%', background: 'white',
+                  position: 'absolute', top: 3,
+                  left: darkMode ? 27 : 3,
+                  transition: 'left 0.3s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header"><h3>Уведомления</h3></div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
+              <div>
+                <span style={{ fontSize: 14, color: 'var(--text)' }}>{notificationsOn ? 'Уведомления включены' : 'Уведомления выключены'}</span>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Звук при создании счетов и организаций</div>
+              </div>
+              <button
+                onClick={() => {
+                  const next = !notificationsOn;
+                  setNotificationsOn(next);
+                  setNotificationsEnabled(next);
+                  showToast(next ? 'Уведомления включены' : 'Уведомления выключены');
+                }}
+                style={{
+                  width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                  background: notificationsOn ? 'var(--accent-ink)' : 'var(--border-strong)',
+                  position: 'relative', transition: 'background 0.3s'
+                }}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%', background: 'white',
+                  position: 'absolute', top: 3,
+                  left: notificationsOn ? 27 : 3,
+                  transition: 'left 0.3s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
               </button>
             </div>
           </div>

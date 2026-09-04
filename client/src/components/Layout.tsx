@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
+import { Home, FilePlus, BookOpen, Settings, Info } from 'lucide-react';
 
 function NavTooltip({ children, text }: { children: React.ReactNode; text: string }) {
   const [show, setShow] = useState(false);
@@ -12,14 +13,22 @@ function NavTooltip({ children, text }: { children: React.ReactNode; text: strin
 }
 
 export function Layout() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <>
       <nav className="nav">
         <Link to="/dashboard" className="nav-brand">
           <div className="nav-brand-icon" style={{ borderRadius: '50%', overflow: 'hidden', width: 28, height: 28 }}>
-            <img src="./billdo.png" alt="Билдо" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src="./billdo.png" alt="Билл-до" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
-          Билдо
+          Билл-до
         </Link>
         <div className="nav-tabs">
           <NavLink to="/dashboard" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`} end>
@@ -42,6 +51,30 @@ export function Layout() {
       <div className="container">
         <Outlet />
       </div>
+      {isMobile && (
+        <div className="mobile-tabbar">
+          <NavLink to="/dashboard" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`} end>
+            <Home size={22} />
+            <span>Главная</span>
+          </NavLink>
+          <NavLink to="/invoice" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+            <FilePlus size={22} />
+            <span>Счёт</span>
+          </NavLink>
+          <NavLink to="/journal" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+            <BookOpen size={22} />
+            <span>Журнал</span>
+          </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+            <Settings size={22} />
+            <span>Настройки</span>
+          </NavLink>
+          <NavLink to="/about" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
+            <Info size={22} />
+            <span>О нас</span>
+          </NavLink>
+        </div>
+      )}
     </>
   );
 }

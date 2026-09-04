@@ -44,7 +44,7 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'Билдо',
+    title: 'Билл-до',
     icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -106,7 +106,7 @@ ipcMain.handle('save-files', async (event, downloadPath, files) => {
     } else {
       targetDir = targetDir.replace(/^~/, app.getPath('home'));
     }
-    const exportDir = path.join(targetDir, `Билдо_Сохранение_файлов_${new Date().toISOString().slice(0,10).replace(/-/g,'')}`);
+    const exportDir = path.join(targetDir, `Билл-до_Сохранение_файлов_${new Date().toISOString().slice(0,10).replace(/-/g,'')}`);
     const excelDir = path.join(exportDir, 'Excel');
     const pdfDir = path.join(exportDir, 'PDF');
     if (!fs.existsSync(excelDir)) fs.mkdirSync(excelDir, { recursive: true });
@@ -122,6 +122,30 @@ ipcMain.handle('save-files', async (event, downloadPath, files) => {
     return { success: true, path: exportDir };
   } catch (error) {
     return { success: false, error: error.message };
+  }
+});
+
+// IPC handler for generating PDF as base64 (no file save)
+ipcMain.handle('generate-pdf-base64', async (event, htmlString) => {
+  const htmlPath = path.join(os.tmpdir(), `billdo_pdf_${Date.now()}.html`);
+  fs.writeFileSync(htmlPath, htmlString, 'utf-8');
+  const win = new BrowserWindow({
+    show: false, width: 794, height: 1123,
+    webPreferences: { offscreen: true, contextIsolation: true, nodeIntegration: false, javascript: false },
+  });
+  try {
+    await win.loadURL('file://' + htmlPath.replace(/\\/g, '/'));
+    await new Promise(r => setTimeout(r, 800));
+    const pdfBuffer = await win.webContents.printToPDF({
+      printBackground: true, pageSize: 'A4',
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+    });
+    return { success: true, base64: pdfBuffer.toString('base64') };
+  } catch (error) {
+    return { success: false, error: error.message };
+  } finally {
+    win.destroy();
+    try { fs.unlinkSync(htmlPath); } catch (_) {}
   }
 });
 
@@ -145,59 +169,30 @@ ipcMain.handle('open-file', async (event, filePath) => {
   }
 });
 
-// IPC handler for printing HTML (opens print dialog with preview)
+// IPC handler for printing HTML (opens print dialog)
 ipcMain.handle('print-html', async (event, htmlString, filename) => {
   const htmlPath = path.join(os.tmpdir(), `billdo_print_${Date.now()}.html`);
-  const pdfPath = htmlPath.replace('.html', '.pdf');
   fs.writeFileSync(htmlPath, htmlString, 'utf-8');
 
-  // Step 1: Render HTML → PDF (headless, no dialog)
-  const htmlWin = new BrowserWindow({
+  const win = new BrowserWindow({
     show: false,
     width: 794,
     height: 1123,
-    webPreferences: { offscreen: true, contextIsolation: true, nodeIntegration: false, javascript: false },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, javascript: false },
   });
-
-  let pdfWin = null;
 
   try {
     const fileUrl = 'file://' + htmlPath.replace(/\\/g, '/');
-    await htmlWin.loadURL(fileUrl);
+    await win.loadURL(fileUrl);
 
     await new Promise(r => {
-      if (htmlWin.isDestroyed()) return r();
-      htmlWin.webContents.once('did-finish-load', r);
+      if (win.isDestroyed()) return r();
+      win.webContents.once('did-finish-load', r);
       setTimeout(r, 2000);
     });
 
-    const pdfBuffer = await htmlWin.webContents.printToPDF({
-      printBackground: true,
-      pageSize: 'A4',
-      margins: { top: 0, bottom: 0, left: 0, right: 0 },
-    });
-    fs.writeFileSync(pdfPath, pdfBuffer);
-
-    // Step 2: Open PDF in a new window (Chromium native PDF viewer)
-    pdfWin = new BrowserWindow({
-      show: false,
-      width: 794,
-      height: 1123,
-      webPreferences: { contextIsolation: true, nodeIntegration: false, javascript: false },
-    });
-
-    const pdfUrl = 'file://' + pdfPath.replace(/\\/g, '/');
-    await pdfWin.loadURL(pdfUrl);
-
-    await new Promise(r => {
-      if (pdfWin.isDestroyed()) return r();
-      pdfWin.webContents.once('did-finish-load', r);
-      setTimeout(r, 2000);
-    });
-
-    // Step 3: Print from PDF window — Chromium PDF viewer provides preview
     const printResult = await new Promise((resolve) => {
-      pdfWin.webContents.print({ printBackground: true }, (success, failureReason) => {
+      win.webContents.print({ printBackground: true }, (success, failureReason) => {
         resolve({ success, failureReason });
       });
     });
@@ -211,10 +206,8 @@ ipcMain.handle('print-html', async (event, htmlString, filename) => {
     return { success: false, error: error.message };
   } finally {
     setTimeout(() => {
-      if (htmlWin && !htmlWin.isDestroyed()) htmlWin.destroy();
-      if (pdfWin && !pdfWin.isDestroyed()) pdfWin.destroy();
+      if (!win.isDestroyed()) win.destroy();
       try { fs.unlinkSync(htmlPath); } catch (_) {}
-      try { fs.unlinkSync(pdfPath); } catch (_) {}
     }, 30000);
   }
 });

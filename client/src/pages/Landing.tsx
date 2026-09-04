@@ -72,7 +72,7 @@ export function LandingPage() {
             <div className="l-nav-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             </div>
-            <span>Билдо</span>
+            <span>Билл-до</span>
           </Link>
           <div className="l-nav-links">
             <a href="#features">Возможности</a>
@@ -114,7 +114,7 @@ export function LandingPage() {
           <div className="l-invoice-mock">
             <div className="l-mock-chrome">
               <div className="l-mock-dots"><span /><span /><span /></div>
-              <div className="l-mock-url">billdo.ru/invoice/142</div>
+              <div className="l-mock-url">bill-do.ru/invoice/142</div>
             </div>
             <div className="l-mock-body">
               <div className="l-mock-line l-mock-line-title">Счёт на оплату № 142 от 20.08.2026</div>
@@ -297,7 +297,7 @@ export function LandingPage() {
                 <div className="l-nav-icon" style={{ width: 30, height: 30, borderRadius: 8 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 </div>
-                <span>Билдо</span>
+                <span>Билл-до</span>
               </div>
               <p className="l-footer-desc">Онлайн-сервис для выставления счетов на оплату. Создавайте профессиональные документы за минуту.</p>
             </div>
@@ -315,11 +315,11 @@ export function LandingPage() {
             </div>
             <div className="l-footer-col">
               <h4>Контакты</h4>
-              <a href="mailto:hello@billdo.ru">hello@billdo.ru</a>
+              <a href="mailto:hello@bill-do.ru">hello@bill-do.ru</a>
             </div>
           </div>
           <div className="l-footer-bottom">
-            <span>© 2026 Билдо</span>
+            <span>© 2026 Билл-до</span>
             <span className="l-footer-badge">Сделано с заботой о бухгалтерах</span>
           </div>
         </div>

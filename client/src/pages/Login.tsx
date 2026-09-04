@@ -20,7 +20,7 @@ export function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <h1>Вход</h1>
-        <p className="subtitle">Войдите в свой аккаунт Билдо</p>
+        <p className="subtitle">Войдите в свой аккаунт Билл-до</p>
 
         {error && <div className="auth-error">{error}</div>}
 

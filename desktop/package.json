@@ -1,7 +1,7 @@
 {
-  "name": "billdo-desktop",
-  "version": "1.2.0",
-  "description": "Билдо — Автономное приложение для выставления счетов",
+  "name": "bill-do-desktop",
+  "version": "2.0.0",
+  "description": "Билл-до — Автономное приложение для выставления счетов",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -10,8 +10,8 @@
     "build:linux": "electron-builder --linux"
   },
   "build": {
-    "appId": "ru.billdo.app",
-    "productName": "Билдо",
+    "appId": "ru.bill-do.app",
+    "productName": "Билл-до",
     "directories": {
       "output": "release"
     },
@@ -49,7 +49,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Билдо",
+      "shortcutName": "Билл-до",
       "installerIcon": "icon.ico",
       "uninstallerIcon": "icon.ico",
       "installerHeaderIcon": "icon.ico",

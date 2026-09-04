@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../api/client';
+import { CustomSelect } from '../components/CustomSelect';
+import { showNotification } from '../lib/notifications';
+import { generateInvoiceExcel, generateActExcel, generateInvoiceHtml, generateActHtml, downloadBlob, shareHtml } from '../lib/local-docs';
 
 const MONTHS_GEN = ['','января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 const MONTHS_NOM = ['','Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -51,6 +54,7 @@ export function JournalPage() {
   const [previewOrg, setPreviewOrg] = useState<any>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     api.getActiveOrganization().then(res => {
@@ -67,7 +71,8 @@ export function JournalPage() {
     setDateFrom(from); setDateTo(to);
   }, []);
 
-  useEffect(() => { loadInvoices(); }, [dateFrom, dateTo, statusFilter]);
+  // Re-fetch invoices when navigating to this page or when filters change
+  useEffect(() => { loadInvoices(); }, [dateFrom, dateTo, statusFilter, location.pathname]);
 
   async function loadInvoices() {
     try {
@@ -86,7 +91,13 @@ export function JournalPage() {
   }
 
   async function handleStatusChange(id: string, status: string) {
-    try { await api.updateInvoiceStatus(id, status); loadInvoices(); showToast('Статус обновлён'); }
+    try {
+      await api.updateInvoiceStatus(id, status);
+      loadInvoices();
+      const STATUS_LABELS: Record<string, string> = { draft: 'Черновик', sent: 'Выставлен', paid: 'Оплачен', overdue: 'Просрочен' };
+      const notif = showNotification('status_changed', 'Статус: ' + (STATUS_LABELS[status] || status));
+      if (notif) showToast(notif.msg, notif.type); else showToast('Статус обновлён');
+    }
     catch (err: any) { showToast(err.message, 'error'); }
   }
 
@@ -95,6 +106,15 @@ export function JournalPage() {
     try { await api.deleteInvoice(id); loadInvoices(); showToast('Счёт удалён'); }
     catch (err: any) { showToast(err.message, 'error'); }
   }
+
+  // Refresh when page becomes visible again (e.g., after creating invoice)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') loadInvoices();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [dateFrom, dateTo, statusFilter, search]);
 
   function handleSearch() { loadInvoices(); }
 
@@ -106,77 +126,50 @@ export function JournalPage() {
     return `${prefix}_№${inv.number}_${safeOrg}_${safeCp}_${month}_${inv.serviceYear}`;
   }
 
-  async function fetchAndSave(url: string, filename: string) {
-    const res = await fetch(url, { credentials: 'include' });
-    if (!res.ok) throw new Error('Ошибка скачивания');
-    const blob = await res.blob();
-    if ((window as any).electronAPI?.isElectron) {
-      const buf = await blob.arrayBuffer();
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-      await (window as any).electronAPI.saveFile(downloadPath || '', filename, b64);
-    } else {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = filename;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    }
-  }
-
-  async function fetchHtmlAndGeneratePdf(htmlUrl: string, filename: string) {
-    const res = await fetch(htmlUrl, { credentials: 'include' });
-    if (!res.ok) throw new Error('Ошибка загрузки');
-    const html = await res.text();
-    if ((window as any).electronAPI?.isElectron) {
-      const r = await (window as any).electronAPI.generatePdf(html, filename + '.pdf', downloadPath || '');
-      if (!r.success) throw new Error(r.error || 'Ошибка PDF');
-    } else {
-      const w = window.open('', '_blank');
-      if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500); }
-    }
-  }
-
-  async function fetchHtmlAndPrint(htmlUrl: string, filename: string) {
-    const res = await fetch(htmlUrl, { credentials: 'include' });
-    if (!res.ok) throw new Error('Ошибка загрузки');
-    const html = await res.text();
-    if ((window as any).electronAPI?.isElectron) {
-      // Use printHtml IPC to open print dialog directly
-      const r = await (window as any).electronAPI.printHtml(html, filename);
-      if (!r.success) throw new Error(r.error || 'Ошибка печати');
-    } else {
-      const w = window.open('', '_blank', 'width=900,height=700');
-      if (w) { w.document.write(html); w.document.close(); w.onload = () => w.print(); }
-    }
-  }
-
   function handleDownloadExcel(inv: any) {
-    showToast('Скачивание Excel...', 'info');
-    fetchAndSave(api.getExcelUrl(inv.id), buildFullName('invoice', inv) + '.xlsx').then(() => showToast('Excel скачан', 'success')).catch(e => showToast(e.message, 'error'));
+    showToast('Генерация Excel...', 'info');
+    generateInvoiceExcel(inv.id).then(blob => {
+      downloadBlob(blob, buildFullName('invoice', inv) + '.xlsx');
+      showToast('Excel скачан');
+    }).catch(e => showToast(e.message, 'error'));
   }
 
   function handleDownloadPdf(inv: any) {
     showToast('Генерация PDF...', 'info');
-    fetchHtmlAndGeneratePdf(api.getPdfUrl(inv.id), buildFullName('invoice', inv)).then(() => showToast('PDF создан!', 'success')).catch(e => showToast(e.message, 'error'));
+    generateInvoiceHtml(inv.id).then(html => {
+      shareHtml(html, buildFullName('invoice', inv));
+      showToast('PDF готов');
+    }).catch(e => showToast(e.message, 'error'));
   }
 
   function handleDownloadActExcel(inv: any) {
-    showToast('Скачивание акта Excel...', 'info');
-    fetchAndSave(api.getActUrl(inv.id), buildFullName('act', inv) + '.xlsx').then(() => showToast('Excel скачан', 'success')).catch(e => showToast(e.message, 'error'));
+    showToast('Генерация акта Excel...', 'info');
+    generateActExcel(inv.id).then(blob => {
+      downloadBlob(blob, buildFullName('act', inv) + '.xlsx');
+      showToast('Акт Excel скачан');
+    }).catch(e => showToast(e.message, 'error'));
   }
 
   function handleDownloadActPdf(inv: any) {
     showToast('Генерация PDF акта...', 'info');
-    fetchHtmlAndGeneratePdf(api.getActPdfUrl(inv.id), buildFullName('act', inv)).then(() => showToast('PDF акта создан!', 'success')).catch(e => showToast(e.message, 'error'));
+    generateActHtml(inv.id).then(html => {
+      shareHtml(html, buildFullName('act', inv));
+      showToast('PDF акта готов');
+    }).catch(e => showToast(e.message, 'error'));
   }
 
   function handlePrintInvoice(inv: any) {
     showToast('Подготовка печати...', 'info');
-    fetchHtmlAndPrint(api.getPrintUrl(inv.id), buildFullName('invoice', inv)).catch(e => showToast(e.message || 'Ошибка печати', 'error'));
+    generateInvoiceHtml(inv.id).then(html => {
+      shareHtml(html, buildFullName('invoice', inv));
+    }).catch(e => showToast(e.message || 'Ошибка печати', 'error'));
   }
 
   function handlePrintAct(inv: any) {
     showToast('Подготовка печати...', 'info');
-    fetchHtmlAndPrint(api.getActPrintUrl(inv.id), buildFullName('act', inv)).catch(e => showToast(e.message || 'Ошибка печати', 'error'));
+    generateActHtml(inv.id).then(html => {
+      shareHtml(html, buildFullName('act', inv));
+    }).catch(e => showToast(e.message || 'Ошибка печати', 'error'));
   }
 
   async function handleBulkExport() {
@@ -185,66 +178,17 @@ export function JournalPage() {
       return;
     }
     showToast('Подготовка файлов...', 'info');
-    const isElectron = !!(window as any).electronAPI?.isElectron;
 
-    if (isElectron) {
-      try {
-        const files: { filename: string; base64Data: string }[] = [];
-        for (const inv of invoices) {
-          // Invoice Excel
-          const excelRes = await fetch(api.getExcelUrl(inv.id), { credentials: 'include' });
-          if (excelRes.ok) {
-            const blob = await excelRes.blob();
-            const buf = await blob.arrayBuffer();
-            files.push({ filename: buildFullName('invoice', inv) + '.xlsx', base64Data: btoa(String.fromCharCode(...new Uint8Array(buf))) });
-          }
-          // Invoice PDF
-          const pdfRes = await fetch(api.getPdfUrl(inv.id), { credentials: 'include' });
-          if (pdfRes.ok) {
-            const html = await pdfRes.text();
-            const r = await (window as any).electronAPI.generatePdf(html, buildFullName('invoice', inv) + '.pdf', downloadPath || '');
-            if (r.success && r.path) {
-              const pdfBuf = await fetch('file://' + r.path).then(r => r.arrayBuffer()).catch(() => null);
-              if (pdfBuf) files.push({ filename: buildFullName('invoice', inv) + '.pdf', base64Data: btoa(String.fromCharCode(...new Uint8Array(pdfBuf))) });
-            }
-          }
-          // Act Excel
-          const actExcelRes = await fetch(api.getActUrl(inv.id), { credentials: 'include' });
-          if (actExcelRes.ok) {
-            const blob = await actExcelRes.blob();
-            const buf = await blob.arrayBuffer();
-            files.push({ filename: buildFullName('act', inv) + '.xlsx', base64Data: btoa(String.fromCharCode(...new Uint8Array(buf))) });
-          }
-          // Act PDF
-          const actPdfRes = await fetch(api.getActPdfUrl(inv.id), { credentials: 'include' });
-          if (actPdfRes.ok) {
-            const html = await actPdfRes.text();
-            const r = await (window as any).electronAPI.generatePdf(html, buildFullName('act', inv) + '.pdf', downloadPath || '');
-            if (r.success && r.path) {
-              const pdfBuf = await fetch('file://' + r.path).then(r => r.arrayBuffer()).catch(() => null);
-              if (pdfBuf) files.push({ filename: buildFullName('act', inv) + '.pdf', base64Data: btoa(String.fromCharCode(...new Uint8Array(pdfBuf))) });
-            }
-          }
-        }
-        if (files.length > 0) {
-          await (window as any).electronAPI.saveFiles(downloadPath || '', files);
-        }
-        showToast('Готово! Файлы сохранены');
-      } catch (err: any) {
-        showToast(err.message || 'Ошибка экспорта', 'error');
+    try {
+      for (const inv of invoices) {
+        const invoiceBlob = await generateInvoiceExcel(inv.id);
+        downloadBlob(invoiceBlob, buildFullName('invoice', inv) + '.xlsx');
+        const actBlob = await generateActExcel(inv.id);
+        downloadBlob(actBlob, buildFullName('act', inv) + '.xlsx');
       }
-    } else {
-      try {
-        for (const inv of invoices) {
-          await fetchAndSave(api.getExcelUrl(inv.id), buildFullName('invoice', inv) + '.xlsx');
-          await fetchHtmlAndGeneratePdf(api.getPdfUrl(inv.id), buildFullName('invoice', inv));
-          await fetchAndSave(api.getActUrl(inv.id), buildFullName('act', inv) + '.xlsx');
-          await fetchHtmlAndGeneratePdf(api.getActPdfUrl(inv.id), buildFullName('act', inv));
-        }
-        showToast('Готово! Файлы сохранены');
-      } catch (err: any) {
-        showToast(err.message || 'Ошибка экспорта', 'error');
-      }
+      showToast('Готово! Файлы сохранены');
+    } catch (err: any) {
+      showToast(err.message || 'Ошибка экспорта', 'error');
     }
   }
 
@@ -293,9 +237,17 @@ export function JournalPage() {
           <div className="form-group"><label>Дата от</label><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></div>
           <div className="form-group"><label>Дата до</label><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></div>
           <div className="form-group"><label>Статус</label>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">Все</option><option value="draft">Черновик</option><option value="sent">Выставлен</option><option value="paid">Оплачен</option><option value="overdue">Просрочен</option>
-            </select>
+            <CustomSelect
+              options={[
+                { value: '', label: 'Все' },
+                { value: 'draft', label: 'Черновик' },
+                { value: 'sent', label: 'Выставлен' },
+                { value: 'paid', label: 'Оплачен' },
+                { value: 'overdue', label: 'Просрочен' },
+              ]}
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val)}
+            />
           </div>
           <button className="btn btn-sm btn-secondary" onClick={resetFilters}>Сбросить</button>
         </div>
@@ -324,7 +276,7 @@ export function JournalPage() {
           {invoices.length > 0 && (
             <div className="journal-hint">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-              Нажмите на стрелку <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{verticalAlign:'middle'}}><polyline points="9 18 15 12 9 6"/></svg> рядом со счётом, чтобы увидеть документы для скачивания
+              Нажмите на значок <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign:'middle',margin:'0 2px'}}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> рядом со счётом, чтобы увидеть документы для скачивания
             </div>
           )}
           <table className="table">
@@ -340,7 +292,7 @@ export function JournalPage() {
                       <tr className={isExpanded ? 'row-expanded' : ''}>
                         <td>
                           <button className="row-expand-btn" onClick={() => toggleRow(inv.id)} title="Документы">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: isExpanded ? 'rotate(90deg)' : '', transition: 'transform 0.15s' }}><polyline points="9 18 15 12 9 6"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isExpanded ? 'rotate(180deg)' : '', transition: 'transform 0.2s cubic-bezier(0.33, 1, 0.68, 1)' }}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                           </button>
                         </td>
                         <td><strong>{inv.number}</strong></td>
@@ -444,8 +396,8 @@ export function JournalPage() {
       {toast && <div className="toast-container"><div className={`toast ${toast.type}`} onClick={() => setToast(null)}>{toast.msg}</div></div>}
 
       {previewInv && createPortal(
-        <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewInv(null); }} style={{ zIndex: 9999 }}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 680, maxHeight: '90vh', overflow: 'auto', zIndex: 10000 }}>
+        <div className="modal-overlay journal-preview-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setPreviewInv(null); }} style={{ zIndex: 9999 }}>
+          <div className="modal journal-preview-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 680, maxHeight: '90vh', overflow: 'auto', zIndex: 10000 }}>
             <div className="modal-header">
               <h3>Предпросмотр счёта № {previewInv.number}</h3>
               <button className="modal-close" onClick={() => setPreviewInv(null)}>
@@ -516,7 +468,7 @@ export function JournalPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => { setShowPathWarning(false); showToast('Файлы будут в «Загрузках»', 'info'); }}>Оставить по умолчанию</button>
-              <button className="btn btn-primary" onClick={() => { if (downloadPath) { api.getActiveOrganization().then(r => api.updateOrganization(r.organization.id, { downloadPath })).catch(() => {}); showToast('Путь сохранён'); } setShowPathWarning(false); }}>Сохранить</button>
+              <button className="btn btn-primary" onClick={() => { if (downloadPath) { api.getActiveOrganization().then(r => { if (r.organization) api.updateOrganization(r.organization.id, { downloadPath }); }).catch(() => {}); showToast('Путь сохранён'); } setShowPathWarning(false); }}>Сохранить</button>
             </div>
           </div>
         </div>,

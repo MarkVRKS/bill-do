@@ -11,29 +11,29 @@ interface TourStep {
 }
 
 const STEPS: TourStep[] = [
-  { target: '', title: 'Добро пожаловать!', text: 'Покажем главное за минуту.', page: '/dashboard' },
-  { target: '.nav-brand', title: 'Навигация', text: 'Логотип — кнопка возврата.', page: '/dashboard', position: 'bottom' },
-  { target: '.nav-tabs .nav-tab:nth-child(1)', title: 'Дашборд', text: 'Главная со статистикой.', page: '/dashboard', position: 'bottom' },
-  { target: '.nav-tabs .nav-tab:nth-child(2)', title: 'Новый счёт', text: 'Создание счёта.', page: '/dashboard', position: 'bottom' },
-  { target: '.journal-metric-card', title: 'Статистика', text: 'Сводка: счета, сумма, чек.', page: '/dashboard', position: 'right' },
-  { target: '', title: 'Создание счёта', text: 'Заполняете форму — документ собирается.', page: '/invoice' },
-  { target: '#invoiceNumber', title: 'Номер', text: 'Автоматический.', page: '/invoice', position: 'bottom' },
-  { target: '#invoiceDate', title: 'Дата', text: 'Дата выставления.', page: '/invoice', position: 'bottom' },
-  { target: '#counterparty', title: 'Покупатель', text: 'Из списка.', page: '/invoice', position: 'bottom' },
-  { target: '#vatType', title: 'НДС', text: 'Ставка.', page: '/invoice', position: 'bottom' },
-  { target: '#positionsBody', title: 'Позиции', text: 'Услуги. Сумма сама.', page: '/invoice', position: 'right' },
-  { target: '.invoice-preview', title: 'Просмотр', text: 'Обновляется realtime.', page: '/invoice', position: 'left' },
-  { target: '', title: 'Журнал', text: 'Все счета.', page: '/journal' },
-  { target: '.filter-bar', title: 'Фильтры', text: 'Поиск.', page: '/journal', position: 'bottom' },
-  { target: '.journal-dashboard', title: 'Аналитика', text: 'Сумма, чек.', page: '/journal', position: 'bottom' },
-  { target: '', title: 'Настройки', text: 'Реквизиты.', page: '/settings' },
-  { target: '#org-name', title: 'Название', text: 'Наименование.', page: '/settings', position: 'right' },
-  { target: '#bank-name', title: 'Банк', text: 'Банк.', page: '/settings', position: 'right' },
-  { target: '.settings-mini-preview', title: 'Просмотр', text: 'Как выглядит счёт.', page: '/settings', position: 'left' },
-  { target: '.settings-actions', title: 'Действия', text: 'Быстрый доступ.', page: '/settings', position: 'left' },
+  { target: '', title: 'Добро пожаловать!', text: 'Давайте познакомимся с основными возможностями приложения за пару минут.', page: '/dashboard' },
+  { target: '.nav-brand', title: 'Навигация', text: 'Нажмите на логотип, чтобы вернуться на главную страницу из любого раздела.', page: '/dashboard', position: 'bottom' },
+  { target: '.nav-tabs .nav-tab:nth-child(1)', title: 'Дашборд', text: 'Здесь находится главная страница с общей статистикой вашего аккаунта.', page: '/dashboard', position: 'bottom' },
+  { target: '.nav-tabs .nav-tab:nth-child(2)', title: 'Новый счёт', text: 'Перейдите сюда для создания нового счёта на оплату.', page: '/dashboard', position: 'bottom' },
+  { target: '.journal-metric-card', title: 'Статистика', text: 'Здесь хранится вся сводка по счетам, актам, суммам и чекам.', page: '/dashboard', position: 'right' },
+  { target: '', title: 'Создание счёта', text: 'Заполните форму слева — документ будет собираться справа в реальном времени.', page: '/invoice' },
+  { target: '#invoiceNumber', title: 'Номер', text: 'Номер присваивается автоматически, но вы можете изменить его вручную.', page: '/invoice', position: 'bottom' },
+  { target: '#invoiceDate', title: 'Дата', text: 'Укажите дату выставления счёта.', page: '/invoice', position: 'bottom' },
+  { target: '#counterparty', title: 'Покупатель', text: 'Выберите покупателя из списка, который вы составили во вкладке «Настройки», или добавьте нового прямо здесь.', page: '/invoice', position: 'bottom' },
+  { target: '#vatType', title: 'НДС', text: 'Выберите ставку НДС, если она применима к вашей деятельности.', page: '/invoice', position: 'bottom' },
+  { target: '#positionsBody', title: 'Позиции', text: 'Здесь вы можете описать услугу, настроить количество, единицы измерения и цену за единицу. Программа сама подсчитает общую сумму, включая НДС (если он указан).', page: '/invoice', position: 'right' },
+  { target: '.invoice-preview', title: 'Просмотр', text: 'По мере заполнения счёта вы можете видеть, как формируется ваш документ — всё обновляется в реальном времени.', page: '/invoice', position: 'left' },
+  { target: '', title: 'Журнал', text: 'Здесь хранятся все ваши сгенерированные счета и акты.', page: '/journal' },
+  { target: '.filter-bar', title: 'Фильтры', text: 'Применяйте различные фильтры для удобной навигации и поиска нужных счетов.', page: '/journal', position: 'bottom' },
+  { target: '.journal-dashboard', title: 'Аналитика', text: 'Здесь отображается общая статистика: суммы счетов, их количество и текущие статусы.', page: '/journal', position: 'bottom' },
+  { target: '', title: 'Настройки', text: 'Настройте здесь реквизиты своей организации, а также управляйте списком покупателей.', page: '/settings' },
+  { target: '#org-name', title: 'Название', text: 'Здесь вы можете вписать полное наименование вашей организации.', page: '/settings', position: 'right' },
+  { target: '#bank-name', title: 'Банк', text: 'Здесь вы можете вписать свои банковские реквизиты: название банка, БИК, корреспондентский и расчётный счёта.', page: '/settings', position: 'right' },
+  { target: '.settings-mini-preview', title: 'Просмотр', text: 'Так выглядит ваш счёт.', page: '/settings', position: 'left' },
+  { target: '.settings-actions', title: 'Действия', text: 'Здесь вы можете получить быстрый доступ к основным функциям сервиса.', page: '/settings', position: 'left' },
   { target: '.backup-dropzone', title: 'Бэкап', text: 'Здесь вы можете сохранить себе бэкап настроек, либо же загрузить настройки из бэкапа. Для продолжения вашей работы с нашим сервисом!', page: '/settings', position: 'left' },
   { target: '.journal-export-bar', title: 'Выгрузка документов', text: 'Здесь вы можете сохранить все свои генерированные файлы счетов и актов.', page: '/journal', position: 'bottom' },
-  { target: '', title: 'Готово!', text: 'Создавайте счета!', page: '/dashboard' },
+  { target: '', title: 'Готово!', text: 'Теперь вы знаете основы! Создавайте счета и акты в пару кликов. Если захотите освежить память — гайд всегда доступен в настройках. Подробнее о возможностях приложения — во вкладке «О приложении».', page: '/dashboard' },
 ];
 
 const SP = 6;
@@ -65,10 +65,16 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setVisible(false);
 
     const doResolve = () => {
+      const isMobile = window.innerWidth <= 640;
+
       if (!step?.target) {
         setCentered(true);
         setSpotStyle({});
-        setCardStyle({ top: '50%', left: '50%', transform: 'translate(-50%,-50%)' });
+        if (isMobile) {
+          setCardStyle({ left: 16, right: 16, bottom: 16, top: 'auto', transform: 'none', width: 'auto' });
+        } else {
+          setCardStyle({ top: '50%', left: '50%', transform: 'translate(-50%,-50%)' });
+        }
         requestAnimationFrame(() => { setVisible(true); busyRef.current = false; });
         return;
       }
@@ -81,27 +87,36 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
           setCentered(false);
           setSpotStyle({
             top: r.top - SP,
-            left: r.left - SP,
-            width: r.width + SP * 2,
+            left: Math.max(4, r.left - SP),
+            width: Math.min(r.width + SP * 2, window.innerWidth - 8),
             height: r.height + SP * 2,
           });
-          // Card position
-          const cw = 360, ch = 200, g = 16;
-          let ct: number, cl: number;
-          const pos = step.position || 'bottom';
-          if (pos === 'right') { cl = r.right + g; ct = r.top + r.height / 2 - ch / 2; }
-          else if (pos === 'left') { cl = r.left - cw - g; ct = r.top + r.height / 2 - ch / 2; }
-          else if (pos === 'bottom') { ct = r.bottom + g; cl = r.left + r.width / 2 - cw / 2; }
-          else { ct = r.top - ch - g; cl = r.left + r.width / 2 - cw / 2; }
-          cl = Math.max(12, Math.min(cl, window.innerWidth - cw - 12));
-          ct = Math.max(12, Math.min(ct, window.innerHeight - ch - 12));
-          setCardStyle({ top: ct, left: cl });
+
+          if (isMobile) {
+            // On mobile, always show card at bottom
+            setCardStyle({ left: 16, right: 16, bottom: 16, top: 'auto', transform: 'none', width: 'auto' });
+          } else {
+            const cw = 360, ch = 200, g = 16;
+            let ct: number, cl: number;
+            const pos = step.position || 'bottom';
+            if (pos === 'right') { cl = r.right + g; ct = r.top + r.height / 2 - ch / 2; }
+            else if (pos === 'left') { cl = r.left - cw - g; ct = r.top + r.height / 2 - ch / 2; }
+            else if (pos === 'bottom') { ct = r.bottom + g; cl = r.left + r.width / 2 - cw / 2; }
+            else { ct = r.top - ch - g; cl = r.left + r.width / 2 - cw / 2; }
+            cl = Math.max(12, Math.min(cl, window.innerWidth - cw - 12));
+            ct = Math.max(12, Math.min(ct, window.innerHeight - ch - 12));
+            setCardStyle({ top: ct, left: cl });
+          }
           requestAnimationFrame(() => { setVisible(true); busyRef.current = false; });
         }, 300);
       } else {
         setCentered(true);
         setSpotStyle({});
-        setCardStyle({ top: '50%', left: '50%', transform: 'translate(-50%,-50%)' });
+        if (isMobile) {
+          setCardStyle({ left: 16, right: 16, bottom: 16, top: 'auto', transform: 'none', width: 'auto' });
+        } else {
+          setCardStyle({ top: '50%', left: '50%', transform: 'translate(-50%,-50%)' });
+        }
         requestAnimationFrame(() => { setVisible(true); busyRef.current = false; });
       }
     };
@@ -120,17 +135,27 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         const el = document.querySelector(step.target);
         if (!el) return;
         const r = el.getBoundingClientRect();
-        setSpotStyle({ top: r.top - SP, left: r.left - SP, width: r.width + SP * 2, height: r.height + SP * 2 });
-        const cw = 360, ch = 200, g = 16;
-        const pos = step.position || 'bottom';
-        let ct: number, cl: number;
-        if (pos === 'right') { cl = r.right + g; ct = r.top + r.height / 2 - ch / 2; }
-        else if (pos === 'left') { cl = r.left - cw - g; ct = r.top + r.height / 2 - ch / 2; }
-        else if (pos === 'bottom') { ct = r.bottom + g; cl = r.left + r.width / 2 - cw / 2; }
-        else { ct = r.top - ch - g; cl = r.left + r.width / 2 - cw / 2; }
-        cl = Math.max(12, Math.min(cl, window.innerWidth - cw - 12));
-        ct = Math.max(12, Math.min(ct, window.innerHeight - ch - 12));
-        setCardStyle({ top: ct, left: cl });
+        const isMobile = window.innerWidth <= 640;
+        setSpotStyle({
+          top: r.top - SP,
+          left: Math.max(4, r.left - SP),
+          width: Math.min(r.width + SP * 2, window.innerWidth - 8),
+          height: r.height + SP * 2,
+        });
+        if (isMobile) {
+          setCardStyle({ left: 16, right: 16, bottom: 16, top: 'auto', transform: 'none', width: 'auto' });
+        } else {
+          const cw = 360, ch = 200, g = 16;
+          const pos = step.position || 'bottom';
+          let ct: number, cl: number;
+          if (pos === 'right') { cl = r.right + g; ct = r.top + r.height / 2 - ch / 2; }
+          else if (pos === 'left') { cl = r.left - cw - g; ct = r.top + r.height / 2 - ch / 2; }
+          else if (pos === 'bottom') { ct = r.bottom + g; cl = r.left + r.width / 2 - cw / 2; }
+          else { ct = r.top - ch - g; cl = r.left + r.width / 2 - cw / 2; }
+          cl = Math.max(12, Math.min(cl, window.innerWidth - cw - 12));
+          ct = Math.max(12, Math.min(ct, window.innerHeight - ch - 12));
+          setCardStyle({ top: ct, left: cl });
+        }
       });
     };
     window.addEventListener('scroll', h, { passive: true });

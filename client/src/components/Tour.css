@@ -140,11 +140,36 @@
 
 @media (max-width: 640px) {
   .tour-card {
-    width: auto; left: 16px !important; right: 16px;
-    bottom: 16px !important; top: auto !important;
-    transform: translateY(12px) !important;
+    width: auto !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    top: auto !important;
+    transform: translateY(16px) scale(0.97) !important;
+    max-width: none;
+    padding: 20px;
+    border-radius: 16px;
   }
-  .tour-card.active { transform: translateY(0) !important; }
-  .tour-card.center { left: 16px !important; transform: translateY(12px) !important; }
-  .tour-card.center.active { transform: translateY(0) !important; }
+  .tour-card.active {
+    transform: translateY(0) scale(1) !important;
+  }
+  .tour-card.center {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    top: auto !important;
+    transform: translateY(16px) scale(0.97) !important;
+  }
+  .tour-card.center.active {
+    transform: translateY(0) scale(1) !important;
+  }
+  .tour-spotlight {
+    border-radius: 10px;
+  }
+  .tour-card-title {
+    font-size: 16px;
+  }
+  .tour-card-text {
+    font-size: 13px;
+  }
 }

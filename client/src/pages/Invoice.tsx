@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useInvoiceStore } from '../stores/invoiceStore';
+import { CustomSelect } from '../components/CustomSelect';
+import { showNotification } from '../lib/notifications';
+import { generateInvoiceExcel, generateActExcel, generateInvoiceHtml, generateActHtml, downloadBlob, shareHtml } from '../lib/local-docs';
 
 const MONTHS_GENITIVE = ['', 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
@@ -65,8 +68,8 @@ function BasisItem({ value, index, onChange, onRemove, canRemove }: {
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="номер и договора, напр. Договор №123 от 01.01.2026"
-            autoFocus={!value}
+            placeholder="Номер и дата договора"
+            autoFocus={false}
           />
         </div>
       )}
@@ -85,10 +88,12 @@ export function InvoicePage() {
   const [cpForm, setCpForm] = useState({ name:'', address:'', ogrn:'', inn:'', kpp:'', bases: [''] });
   const [showPathWarning, setShowPathWarning] = useState(false);
   const [tempDownloadPath, setTempDownloadPath] = useState('');
+  const [collapsedPositions, setCollapsedPositions] = useState<Set<string>>(new Set());
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
+    isInitialLoad.current = true;
     loadData();
   }, [id]);
 
@@ -110,6 +115,8 @@ export function InvoicePage() {
       if (id) {
         const inv = await api.getInvoice(id);
         store.loadInvoice(inv.invoice);
+      } else if (store.editingId || store.lastSavedId) {
+        // Store already has data from a previous save — keep it
       } else if (!store.loadDraft()) {
         store.reset();
         store.getNextNumber();
@@ -121,6 +128,14 @@ export function InvoicePage() {
   function showToast(msg: string, type = 'success') {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
+  }
+
+  function togglePosition(id: string) {
+    setCollapsedPositions(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   }
 
   // When counterparty changes, load bases from settings
@@ -165,7 +180,8 @@ export function InvoicePage() {
         store.setField('lastSavedId', store.editingId);
       } else {
         const res = await api.createInvoice(data) as any;
-        showToast('Счёт сохранён');
+        const notif = showNotification('invoice_created', 'Счёт №' + store.number + ' создан');
+        if (notif) showToast(notif.msg, notif.type); else showToast('Счёт сохранён');
         store.setField('editingId', res.invoice.id);
         store.setField('lastSavedId', res.invoice.id);
         localStorage.removeItem('invoice_draft');
@@ -191,81 +207,62 @@ export function InvoicePage() {
     return `${prefix}_№${store.number}_${safeLf}_${safeCp}_${monthName}_${store.serviceYear}`;
   }
 
-  async function fetchAndSave(url: string, filename: string) {
-    const res = await fetch(url, { credentials: 'include' });
-    if (!res.ok) throw new Error('Ошибка скачивания');
-    const blob = await res.blob();
-    if ((window as any).electronAPI?.isElectron) {
-      const buf = await blob.arrayBuffer();
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-      await (window as any).electronAPI.saveFile(org?.downloadPath || '', filename, b64);
-    } else {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    }
-  }
-
-  async function fetchHtmlAndGeneratePdf(htmlUrl: string, filename: string) {
-    const res = await fetch(htmlUrl, { credentials: 'include' });
-    if (!res.ok) throw new Error('Ошибка загрузки');
-    const html = await res.text();
-    if ((window as any).electronAPI?.isElectron) {
-      const r = await (window as any).electronAPI.generatePdf(html, filename + '.pdf', org?.downloadPath || '');
-      if (!r.success) throw new Error(r.error || 'Ошибка PDF');
-    } else {
-      const w = window.open('', '_blank');
-      if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 500); }
-    }
-  }
-
-  async function fetchHtmlAndPrint(htmlUrl: string, type: 'invoice' | 'act') {
-    const res = await fetch(htmlUrl, { credentials: 'include' });
-    if (!res.ok) throw new Error('Ошибка загрузки');
-    const html = await res.text();
-    const filename = getFilename(type);
-    if ((window as any).electronAPI?.isElectron) {
-      // Use printHtml IPC to open print dialog directly
-      const r = await (window as any).electronAPI.printHtml(html, filename);
-      if (!r.success) throw new Error(r.error || 'Ошибка печати');
-    } else {
-      const w = window.open('', '_blank', 'width=900,height=700');
-      if (w) { w.document.write(html); w.document.close(); w.onload = () => w.print(); }
-    }
-  }
-
   function handleDownloadExcel() {
     const id = store.lastSavedId || store.editingId;
-    if (id) { showToast('Скачивание Excel...', 'info'); fetchAndSave(api.getExcelUrl(id), getFilename('invoice') + '.xlsx').then(() => showToast('Excel скачан', 'success')).catch(e => showToast(e.message, 'error')); }
+    if (!id) return;
+    showToast('Генерация Excel...', 'info');
+    generateInvoiceExcel(id).then(blob => {
+      downloadBlob(blob, getFilename('invoice') + '.xlsx');
+      showToast('Excel скачан');
+    }).catch(e => showToast(e.message, 'error'));
   }
 
   function handleDownloadPdf() {
     const id = store.lastSavedId || store.editingId;
-    if (id) { showToast('Генерация PDF...', 'info'); fetchHtmlAndGeneratePdf(api.getPdfUrl(id), getFilename('invoice')).then(() => showToast('PDF создан!', 'success')).catch(e => showToast(e.message, 'error')); }
+    if (!id) return;
+    showToast('Генерация PDF...', 'info');
+    generateInvoiceHtml(id).then(html => {
+      shareHtml(html, getFilename('invoice'));
+      showToast('PDF готов');
+    }).catch(e => showToast(e.message, 'error'));
   }
 
   function handleDownloadAct() {
     const id = store.lastSavedId || store.editingId;
-    if (id) { showToast('Скачивание акта Excel...', 'info'); fetchAndSave(api.getActUrl(id), getFilename('act') + '.xlsx').then(() => showToast('Excel скачан', 'success')).catch(e => showToast(e.message, 'error')); }
+    if (!id) return;
+    showToast('Генерация акта Excel...', 'info');
+    generateActExcel(id).then(blob => {
+      downloadBlob(blob, getFilename('act') + '.xlsx');
+      showToast('Акт Excel скачан');
+    }).catch(e => showToast(e.message, 'error'));
   }
 
   function handleDownloadActPdf() {
     const id = store.lastSavedId || store.editingId;
-    if (id) { showToast('Генерация PDF акта...', 'info'); fetchHtmlAndGeneratePdf(api.getActPdfUrl(id), getFilename('act')).then(() => showToast('PDF акта создан!', 'success')).catch(e => showToast(e.message, 'error')); }
+    if (!id) return;
+    showToast('Генерация PDF акта...', 'info');
+    generateActHtml(id).then(html => {
+      shareHtml(html, getFilename('act'));
+      showToast('PDF акта готов');
+    }).catch(e => showToast(e.message, 'error'));
   }
 
   function handlePrint() {
     const id = store.lastSavedId || store.editingId;
-    if (id) { showToast('Подготовка печати...', 'info'); fetchHtmlAndPrint(api.getPrintUrl(id), 'invoice').catch(e => showToast(e.message || 'Ошибка печати', 'error')); }
+    if (!id) return;
+    showToast('Подготовка печати...', 'info');
+    generateInvoiceHtml(id).then(html => {
+      shareHtml(html, getFilename('invoice'));
+    }).catch(e => showToast(e.message || 'Ошибка печати', 'error'));
   }
 
   function handlePrintAct() {
     const id = store.lastSavedId || store.editingId;
-    if (id) { showToast('Подготовка печати...', 'info'); fetchHtmlAndPrint(api.getActPrintUrl(id), 'act').catch(e => showToast(e.message || 'Ошибка печати', 'error')); }
+    if (!id) return;
+    showToast('Подготовка печати...', 'info');
+    generateActHtml(id).then(html => {
+      shareHtml(html, getFilename('act'));
+    }).catch(e => showToast(e.message || 'Ошибка печати', 'error'));
   }
 
   async function handleSaveCp() {
@@ -299,7 +296,7 @@ export function InvoicePage() {
         <div className="page-hero-sub">Заполните данные слева — документ соберётся справа</div>
       </div>
 
-      <div className={`form-grid ${!previewOpen ? 'preview-collapsed' : ''}`}>
+      <div className={`form-grid${!previewOpen ? ' preview-collapsed' : ''}`}>
         <div>
           <div className="card">
             <div className="card-header"><h3>Основные данные</h3></div>
@@ -316,11 +313,23 @@ export function InvoicePage() {
             <div className="form-group">
               <label>Покупатель</label>
               <div style={{ display: 'flex', gap: 8 }}>
-                <select id="counterparty" value={store.counterpartyId || ''} onChange={(e) => handleCounterpartyChange(e.target.value || null)} style={{ flex: 1 }}>
-                  <option value="">— Выберите покупателя —</option>
-                  {counterparties.map((cp) => <option key={cp.id} value={cp.id}>{cp.name}</option>)}
-                </select>
-                <button className="btn btn-sm btn-secondary" onClick={() => setShowCpModal(true)}>Добавить</button>
+                <div style={{ flex: 1 }}>
+                  <CustomSelect
+                    id="counterparty"
+                    searchable={counterparties.length > 5}
+                    options={[
+                      { value: '', label: '— Выберите покупателя —' },
+                      ...counterparties.map(cp => ({ value: cp.id, label: cp.name }))
+                    ]}
+                    value={store.counterpartyId || ''}
+                    onChange={(val) => handleCounterpartyChange(val || null)}
+                    placeholder="— Выберите покупателя —"
+                  />
+                </div>
+                <button className="btn btn-sm btn-secondary cp-add-btn" onClick={() => setShowCpModal(true)}>
+                  <span className="cp-add-btn-text">Добавить</span>
+                  <span className="cp-add-btn-icon">+</span>
+                </button>
               </div>
             </div>
 
@@ -348,9 +357,11 @@ export function InvoicePage() {
             <div className="form-row">
               <div className="form-group">
                 <label>Месяц оказания услуг</label>
-                <select value={store.serviceMonth} onChange={(e) => store.setField('serviceMonth', parseInt(e.target.value))}>
-                  {MONTHS_GENITIVE.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
-                </select>
+                <CustomSelect
+                  options={MONTHS_GENITIVE.slice(1).map((m, i) => ({ value: String(i + 1), label: m.charAt(0).toUpperCase() + m.slice(1) }))}
+                  value={String(store.serviceMonth)}
+                  onChange={(val) => store.setField('serviceMonth', parseInt(val))}
+                />
               </div>
               <div className="form-group">
                 <label>Год оказания услуг</label>
@@ -359,18 +370,23 @@ export function InvoicePage() {
             </div>
             <div className="form-group">
               <label>НДС</label>
-              <select id="vatType" value={store.vatType} onChange={(e) => store.setField('vatType', e.target.value)}>
-                <option value="none">Без НДС</option>
-                <option value="0">НДС 0%</option>
-                <option value="10">НДС 10%</option>
-                <option value="20">НДС 20%</option>
-                <option value="22">НДС 22%</option>
-              </select>
+              <CustomSelect
+                id="vatType"
+                options={[
+                  { value: 'none', label: 'Без НДС' },
+                  { value: '0', label: 'НДС 0%' },
+                  { value: '10', label: 'НДС 10%' },
+                  { value: '20', label: 'НДС 20%' },
+                  { value: '22', label: 'НДС 22%' },
+                ]}
+                value={store.vatType}
+                onChange={(val) => store.setField('vatType', val)}
+              />
             </div>
           </div>
 
-          <div className="card" style={{ padding: '2rem' }}>
-            <div className="card-header" style={{ marginBottom: '1.75rem', paddingBottom: '1.25rem' }}>
+          <div className="card">
+            <div className="card-header" style={{ marginBottom: '1rem', paddingBottom: '1rem' }}>
               <div>
                 <h3 style={{ marginBottom: 4 }}>Позиции счёта</h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>Добавьте услуги и укажите стоимость</p>
@@ -382,31 +398,41 @@ export function InvoicePage() {
                 <div key={pos.id} className="position-card">
                   <div className="position-card-header">
                     <div className="position-number">{i + 1}</div>
-                    <div className="position-card-title">Позиция {i + 1}</div>
+                    <div className="position-card-title">
+                      Позиция {i + 1}
+                      {collapsedPositions.has(pos.id) && pos.name && (
+                        <span className="position-card-preview"> — {pos.name.length > 30 ? pos.name.slice(0, 30) + '...' : pos.name} ({fmt(pos.quantity * pos.price)} ₽)</span>
+                      )}
+                    </div>
+                    <button className="position-collapse-btn" onClick={() => togglePosition(pos.id)} title={collapsedPositions.has(pos.id) ? 'Развернуть' : 'Свернуть'}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: collapsedPositions.has(pos.id) ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform 0.25s cubic-bezier(0.33, 1, 0.68, 1)' }}><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
                     {store.positions.length > 1 && (
                       <button className="position-delete" onClick={() => store.removePosition(pos.id)}>×</button>
                     )}
                   </div>
-                  <div className="position-name-group">
-                    <label>Наименование услуги</label>
-                    <textarea rows={2} value={pos.name} onChange={(e) => store.updatePosition(pos.id, 'name', e.target.value)} placeholder="Опишите услугу..." />
-                  </div>
-                  <div className="position-fields">
-                    <div className="position-field">
-                      <label>Количество</label>
-                      <input type="number" value={pos.quantity || ''} min={0} placeholder="0" onChange={(e) => store.updatePosition(pos.id, 'quantity', parseFloat(e.target.value) || 0)} />
+                  <div className={`position-body ${collapsedPositions.has(pos.id) ? 'collapsed' : ''}`}>
+                    <div className="position-name-group">
+                      <label>Наименование услуги</label>
+                      <textarea rows={2} value={pos.name} onChange={(e) => store.updatePosition(pos.id, 'name', e.target.value)} placeholder="Опишите услугу..." />
                     </div>
-                    <div className="position-field">
-                      <label>Ед. измерения</label>
-                      <input type="text" value={pos.unit} onChange={(e) => store.updatePosition(pos.id, 'unit', e.target.value)} />
-                    </div>
-                    <div className="position-field">
-                      <label>Цена за ед.</label>
-                      <input type="number" value={pos.price || ''} min={0} step={0.01} placeholder="0" onChange={(e) => store.updatePosition(pos.id, 'price', parseFloat(e.target.value) || 0)} />
-                    </div>
-                    <div className="position-field sum-field">
-                      <label>Сумма</label>
-                      <input type="text" value={fmt(pos.quantity * pos.price)} readOnly />
+                    <div className="position-fields">
+                      <div className="position-field">
+                        <label>Количество</label>
+                        <input type="number" value={pos.quantity || ''} min={0} placeholder="0" onChange={(e) => store.updatePosition(pos.id, 'quantity', parseFloat(e.target.value) || 0)} />
+                      </div>
+                      <div className="position-field">
+                        <label>Ед. измерения</label>
+                        <input type="text" value={pos.unit} onChange={(e) => store.updatePosition(pos.id, 'unit', e.target.value)} />
+                      </div>
+                      <div className="position-field">
+                        <label>Цена за ед.</label>
+                        <input type="number" value={pos.price || ''} min={0} step={0.01} placeholder="0" onChange={(e) => store.updatePosition(pos.id, 'price', parseFloat(e.target.value) || 0)} />
+                      </div>
+                      <div className="position-field sum-field">
+                        <label>Сумма</label>
+                        <input type="text" value={fmt(pos.quantity * pos.price)} readOnly />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -418,7 +444,7 @@ export function InvoicePage() {
               </button>
               {hasSavedInvoice && (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
+                  <div className="action-grid">
                     <TooltipButton tooltip="Создать счёт в Excel" className="btn btn-secondary" onClick={handleDownloadExcel}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
                       Создать счёт в Excel
@@ -436,7 +462,7 @@ export function InvoicePage() {
                       Создать Акт в PDF
                     </TooltipButton>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
+                  <div className="action-grid">
                     <button className="btn btn-outline" onClick={handlePrint} style={{ width: '100%' }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                       Печать счёта
@@ -456,7 +482,7 @@ export function InvoicePage() {
           </div>
         </div>
 
-        <div className={`preview-section ${!previewOpen ? 'preview-hidden' : ''}`}>
+        <div className="preview-section">
           <div className="preview-header">
             <span className="preview-header-label">Предварительный просмотр</span>
             <button className="preview-toggle" onClick={() => setPreviewOpen(false)} title="Свернуть превью">
@@ -519,9 +545,9 @@ export function InvoicePage() {
       </div>
 
       {!previewOpen && (
-        <div className="preview-sidebar-tab" onClick={() => setPreviewOpen(true)} title="Показать превью">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-          <span className="preview-sidebar-tab-text">Превью</span>
+        <div className="preview-reopen-btn" onClick={() => setPreviewOpen(true)} title="Показать превью">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Превью</span>
         </div>
       )}
 

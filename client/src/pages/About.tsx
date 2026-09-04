@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './About.css';
 
 const FEATURES = [
@@ -27,6 +27,118 @@ function FeatureIcon({ type, color }: { type: string; color: string }) {
   }
 }
 
+const TECH_ITEMS = [
+  { name: 'Electron', desc: 'Десктопное приложение' },
+  { name: 'React', desc: 'Интерфейс' },
+  { name: 'Node.js', desc: 'Серверная логика' },
+  { name: 'TypeScript', desc: 'Надёжная типизация' },
+];
+
+function TechOrbit() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const angleRef = useRef(0);
+  const draggingRef = useRef<number | null>(null);
+  const dragStartAngleRef = useRef(0);
+  const dragItemStartAngleRef = useRef(0);
+  const velocityRef = useRef(0);
+  const lastAngleRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  const rafRef = useRef(0);
+  const [positions, setPositions] = useState<{ x: number; y: number }[]>([]);
+  const [dragging, setDragging] = useState<number | null>(null);
+
+  const RADIUS = 100;
+  const COUNT = TECH_ITEMS.length;
+
+  const getPositions = useCallback((angle: number) => {
+    return Array.from({ length: COUNT }, (_, i) => {
+      const a = angle + (i * 2 * Math.PI) / COUNT;
+      return { x: Math.cos(a) * RADIUS, y: Math.sin(a) * RADIUS };
+    });
+  }, [RADIUS, COUNT]);
+
+  useEffect(() => {
+    let running = true;
+    const animate = () => {
+      if (!running) return;
+      if (draggingRef.current === null) {
+        // Apply velocity decay
+        velocityRef.current *= 0.97;
+        if (Math.abs(velocityRef.current) < 0.0001) velocityRef.current = 0;
+        angleRef.current += 0.008 + velocityRef.current;
+      }
+      setPositions(getPositions(angleRef.current));
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => { running = false; cancelAnimationFrame(rafRef.current); };
+  }, [getPositions]);
+
+  const getAngle = (clientX: number, clientY: number) => {
+    const wrap = wrapRef.current;
+    if (!wrap) return 0;
+    const rect = wrap.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    return Math.atan2(clientY - cy, clientX - cx);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent, index: number) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    draggingRef.current = index;
+    setDragging(index);
+    dragStartAngleRef.current = getAngle(e.clientX, e.clientY);
+    dragItemStartAngleRef.current = angleRef.current + (index * 2 * Math.PI) / COUNT;
+    lastAngleRef.current = dragStartAngleRef.current;
+    lastTimeRef.current = Date.now();
+    velocityRef.current = 0;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (draggingRef.current === null) return;
+    const currentAngle = getAngle(e.clientX, e.clientY);
+    const delta = currentAngle - dragStartAngleRef.current;
+    angleRef.current = dragItemStartAngleRef.current - delta - (draggingRef.current * 2 * Math.PI) / COUNT;
+
+    const now = Date.now();
+    const dt = now - lastTimeRef.current;
+    if (dt > 0) {
+      velocityRef.current = (lastAngleRef.current - currentAngle) / dt * 0.5;
+    }
+    lastAngleRef.current = currentAngle;
+    lastTimeRef.current = now;
+  };
+
+  const handlePointerUp = () => {
+    draggingRef.current = null;
+    setDragging(null);
+  };
+
+  return (
+    <div className="about-tech-orbit-wrap">
+      <div ref={wrapRef} className="about-tech-orbit" onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
+        {TECH_ITEMS.map((t, i) => (
+          <div
+            key={i}
+            className={`about-tech-orbit-item${dragging === i ? ' dragging' : ''}`}
+            style={{
+              transform: `translate(${positions[i]?.x || 0}px, ${positions[i]?.y || 0}px)`,
+              transition: dragging === i ? 'none' : undefined,
+            }}
+            onPointerDown={(e) => handlePointerDown(e, i)}
+          >
+            <div className="about-tech-circle">
+              <div className="about-tech-circle-name">{t.name}</div>
+              <div className="about-tech-circle-desc">{t.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AboutPage() {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
 
@@ -46,12 +158,12 @@ export function AboutPage() {
         <div className="about-hero-content">
           <div className="about-hero-logo">
             <div className="about-hero-logo-icon" style={{ borderRadius: '50%', overflow: 'hidden' }}>
-              <img src="./billdo.png" alt="Билдо" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src="./billdo.png" alt="Билл-до" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <h1 className="about-hero-title">Билдо</h1>
+            <h1 className="about-hero-title">Билл-до</h1>
           </div>
           <p className="about-hero-sub">Профессиональные счета на оплату за минуту</p>
-          <a href="https://billdo.ru" target="_blank" rel="noopener noreferrer" className="about-hero-link">billdo.ru</a>
+          <a href="https://bill-do.ru" target="_blank" rel="noopener noreferrer" className="about-hero-link">bill-do.ru</a>
         </div>
       </div>
 
@@ -113,7 +225,7 @@ export function AboutPage() {
               <div className="about-member-role">Разработчик</div>
               <a href="https://t.me/usakso" target="_blank" rel="noopener noreferrer" className="about-member-link about-member-link--tg">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-                @usakso
+                Телеграм: @usakso
               </a>
             </div>
           </div>
@@ -127,7 +239,7 @@ export function AboutPage() {
               <div className="about-member-role">СММ-специалист</div>
               <a href="https://t.me/the_sany19" target="_blank" rel="noopener noreferrer" className="about-member-link about-member-link--tg">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-                @the_sany19
+                Телеграм: @the_sany19
               </a>
             </div>
           </div>
@@ -140,19 +252,7 @@ export function AboutPage() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           <h2>Технологии</h2>
         </div>
-        <div className="about-tech">
-          {[
-            { name: 'Electron', desc: 'Десктопное приложение' },
-            { name: 'React', desc: 'Интерфейс' },
-            { name: 'Node.js', desc: 'Серверная логика' },
-            { name: 'TypeScript', desc: 'Надёжная типизация' },
-          ].map((t, i) => (
-            <div key={i} className="about-tech-item">
-              <div className="about-tech-name">{t.name}</div>
-              <div className="about-tech-desc">{t.desc}</div>
-            </div>
-          ))}
-        </div>
+        <TechOrbit />
       </div>
 
       {/* Footer */}

@@ -84,7 +84,7 @@ export function DashboardPage() {
   return (
     <>
       <div className="page-hero">
-        <h1>Добро пожаловать <em>в Билдо.</em></h1>
+        <h1>Добро пожаловать <em>в Билл-до.</em></h1>
         <div className="page-hero-sub">Управляйте счетами на оплату из одного места</div>
       </div>
 

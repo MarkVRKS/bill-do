@@ -15,4 +15,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('print-html', htmlString, filename),
   saveFiles: (downloadPath, files) =>
     ipcRenderer.invoke('save-files', downloadPath, files),
+  generatePdfBase64: (htmlString) =>
+    ipcRenderer.invoke('generate-pdf-base64', htmlString),
 });

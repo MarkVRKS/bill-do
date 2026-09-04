@@ -1,0 +1,201 @@
+/* ===== CUSTOM SELECT ===== */
+.custom-select {
+  position: relative;
+  width: 100%;
+  z-index: auto;
+}
+
+.custom-select.open {
+  z-index: 100;
+}
+
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: var(--input-h, 44px);
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface, #fff);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text, #1B2A2E);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.custom-select-trigger.placeholder {
+  color: var(--text-muted, #94A19D);
+  font-size: 13px;
+}
+
+.custom-select-trigger:hover {
+  border-color: var(--accent, #7E9A8C);
+}
+
+.custom-select.open .custom-select-trigger {
+  border-color: var(--accent, #7E9A8C);
+  box-shadow: 0 0 0 4px var(--accent-glow, rgba(126,154,140,0.18));
+}
+
+.custom-select-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.custom-select-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted, #94A19D);
+  transition: transform 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+  margin-left: 8px;
+}
+
+.custom-select.open .custom-select-chevron {
+  transform: rotate(180deg);
+}
+
+.custom-select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border-strong, rgba(27,42,46,0.15));
+  border-radius: var(--radius-sm, 12px);
+  box-shadow: 0 12px 32px -8px rgba(27,42,46,0.18), 0 4px 12px -4px rgba(27,42,46,0.08);
+  z-index: 9999;
+  overflow: hidden;
+  animation: customSelectIn 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes customSelectIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.custom-select-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border, rgba(27,42,46,0.09));
+  color: var(--text-muted, #94A19D);
+}
+
+.custom-select-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--text, #1B2A2E);
+  min-width: 0;
+}
+
+.custom-select-search input::placeholder {
+  color: var(--text-muted, #94A19D);
+}
+
+.custom-select-options {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong, rgba(27,42,46,0.15)) transparent;
+}
+
+.custom-select-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-select-options::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-select-options::-webkit-scrollbar-thumb {
+  background: var(--border-strong, rgba(27,42,46,0.15));
+  border-radius: 3px;
+}
+
+.custom-select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text, #1B2A2E);
+  text-align: left;
+  border-radius: 8px;
+  transition: background 0.12s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-select-option:hover {
+  background: var(--accent-light, #DEE7E0);
+}
+
+.custom-select-option.selected {
+  background: var(--accent-light, #DEE7E0);
+  color: var(--accent-ink, #3D5548);
+  font-weight: 600;
+}
+
+.custom-select-option-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.custom-select-check {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--accent-ink, #3D5548);
+}
+
+.custom-select-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted, #94A19D);
+  font-size: 13px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .custom-select-trigger {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .custom-select-trigger.placeholder {
+    font-size: 13px;
+  }
+  .custom-select-option {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .custom-select-search input {
+    font-size: 16px;
+  }
+}

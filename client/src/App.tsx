@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { TourProvider } from './components/Tour';
@@ -9,6 +10,11 @@ import { AboutPage } from './pages/About';
 import './App.css';
 
 export default function App() {
+  useEffect(() => {
+    const theme = localStorage.getItem('billdo_theme');
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+  }, []);
+
   return (
     <HashRouter>
       <TourProvider>

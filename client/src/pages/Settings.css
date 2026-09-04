@@ -170,3 +170,11 @@
   background: var(--accent-light);
   color: var(--accent-ink);
 }
+
+/* ===== MOBILE SETTINGS ===== */
+@media (max-width: 640px) {
+  .download-path-row { flex-direction: column; }
+  .download-path-row .btn { width: 100%; }
+  .settings-mini-preview { padding: 12px; font-size: 9px; }
+  .mp-logo { width: 28px; height: 28px; font-size: 12px; }
+}

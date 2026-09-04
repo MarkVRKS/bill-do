@@ -1,6 +1,7 @@
 node_modules/
 dist/
 release/
+build/
 .mimocode/
 *.asar
 *.asar.unpacked
@@ -10,3 +11,12 @@ release/
 .env.*
 desktop-standalone/
 desktop-standalone-backup-*/
+*.apk
+*.exe
+*.blockmap
+sql-wasm.wasm
+local.properties
+.capacitor/
+android/app/build/
+android/.gradle/
+Описание*.txt

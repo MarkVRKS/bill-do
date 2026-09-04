@@ -154,7 +154,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   getNextNumber: async () => {
     try {
       const { organization } = await api.getActiveOrganization();
-      set({ number: String(organization.nextInvoiceNumber || 1) });
+      if (organization) set({ number: String(organization.nextInvoiceNumber || 1) });
     } catch {
       // ignore
     }
