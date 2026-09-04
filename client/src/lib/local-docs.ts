@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { invGetOne } from './local-db';
 import { orgGetActive } from './local-db';
 import { cpGetAll } from './local-db';
+import { generateLogoQrHtml } from './logo-qr';
 
 function fmt(n: number | string): string {
   return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n));
@@ -100,6 +101,7 @@ ${invoice.vatType === 'none' ? '<p>Без налога (НДС): —</p>' : `<p>
 <div class="sig-block"><div>Руководитель</div><div class="sig-line"><span class="sig-dash"/><span>${esc(org?.director || '')}</span></div></div>
 <div class="sig-block"><div>Бухгалтер</div><div class="sig-line"><span class="sig-dash"/><span>${esc(org?.accountant || '')}</span></div></div>
 </div>
+${await generateLogoQrHtml()}
 </body></html>`;
 }
 
@@ -178,6 +180,7 @@ ${esc(org?.name || '')}${org?.director ? ', в лице ' + esc(org.director) : 
 <div class="sig-line-row"><span class="sig-label">М.П.</span></div>
 </div>
 </div>
+${await generateLogoQrHtml()}
 </body></html>`;
 }
 

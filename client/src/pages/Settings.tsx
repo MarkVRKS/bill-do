@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { startGlobalTour } from '../components/Tour';
 import { Filesystem } from '@capacitor/filesystem';
 import { showNotification, isNotificationsEnabled, setNotificationsEnabled } from '../lib/notifications';
+import { isLogoQrEnabled, setLogoQrEnabled as setLogoQrEnabledStorage, getLogoBase64, setLogoBase64, removeLogo, getQrUrl, setQrUrl as setQrUrlStorage, validateLogo, generateQrCode } from '../lib/logo-qr';
 import { downloadBlob } from '../lib/local-docs';
 import './Settings.css';
 
@@ -92,6 +93,16 @@ export function SettingsPage() {
   const [backupDragOver, setBackupDragOver] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('billdo_theme') === 'dark');
   const [notificationsOn, setNotificationsOn] = useState(() => isNotificationsEnabled());
+  const [logoQrEnabled, setLogoQrEnabled] = useState(() => isLogoQrEnabled());
+  const [logoPreview, setLogoPreview] = useState<string | null>(() => getLogoBase64());
+  const [logoError, setLogoError] = useState<string>('');
+  const [qrUrl, setQrUrl] = useState(() => getQrUrl());
+  const [qrPreview, setQrPreview] = useState<string | null>(null);
+
+  // Generate QR preview on load if URL exists
+  useEffect(() => {
+    if (qrUrl) generateQrCode(qrUrl).then(setQrPreview);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -100,6 +111,25 @@ export function SettingsPage() {
 
   function showToast(msg: string, type = 'success') {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoError('');
+    const result = await validateLogo(file);
+    if (result.valid && result.base64) {
+      setLogoBase64(result.base64);
+      setLogoPreview(result.base64);
+      showToast('Логотип загружен');
+    } else {
+      setLogoError(result.error || 'Ошибка загрузки');
+    }
+  }
+
+  async function generateQrPreview(url: string) {
+    const dataUrl = await generateQrCode(url);
+    setQrPreview(dataUrl);
   }
 
   // Load active org and fill form
@@ -636,19 +666,74 @@ export function SettingsPage() {
           <div className="card">
             <div className="card-header"><h3>Персонализация</h3></div>
             <div style={{ padding: '0 4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, color: 'var(--text-secondary)', fontSize: 13 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                <span>Настройте внешний вид ваших документов</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div>
+                  <span style={{ fontSize: 14, color: 'var(--text)' }}>Логотип и QR-код в документах</span>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Отображаются под подписями в счёте и акте</div>
+                </div>
+                <button
+                  onClick={() => { const next = !logoQrEnabled; setLogoQrEnabled(next); setLogoQrEnabledStorage(next); }}
+                  style={{
+                    width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                    background: logoQrEnabled ? 'var(--accent-ink)' : 'var(--border-strong)',
+                    position: 'relative', transition: 'background 0.3s'
+                  }}
+                >
+                  <div style={{
+                    width: 22, height: 22, borderRadius: '50%', background: 'white',
+                    position: 'absolute', top: 3, left: logoQrEnabled ? 27 : 3,
+                    transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                  }} />
+                </button>
               </div>
-              <div style={{ background: 'var(--accent-light)', borderRadius: 12, padding: '16px 20px', border: '1px dashed var(--border-strong)' }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 8 }}>Скоро будет доступно:</div>
-                <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                  <li>Логотип компании в документах (счёт, акт)</li>
-                  <li>QR-код для быстрой оплаты</li>
-                  <li>Печать на фирменном бланке</li>
-                  <li>Настройка цветов и шрифтов</li>
-                </ul>
-              </div>
+              {logoQrEnabled && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Logo upload */}
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'block', marginBottom: 6 }}>Логотип компании</label>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>Макс. размер: 200×80 px. Формат: PNG, JPG, SVG</div>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      {logoPreview && (
+                        <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 100, minHeight: 50 }}>
+                          <img src={logoPreview} style={{ maxWidth: 180, maxHeight: 70, objectFit: 'contain' }} alt="Логотип" />
+                        </div>
+                      )}
+                      <div>
+                        <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                          {logoPreview ? 'Заменить' : 'Загрузить'}
+                          <input type="file" accept="image/png,image/jpeg,image/svg+xml" style={{ display: 'none' }} onChange={handleLogoUpload} />
+                        </label>
+                        {logoPreview && (
+                          <button className="btn btn-sm btn-danger" style={{ marginLeft: 8 }} onClick={() => { removeLogo(); setLogoPreview(null); showToast('Логотип удалён'); }}>
+                            Удалить
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {logoError && <div style={{ fontSize: 12, color: '#dc3545', marginTop: 6 }}>{logoError}</div>}
+                  </div>
+                  {/* QR code */}
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'block', marginBottom: 6 }}>QR-код</label>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>Введите ссылку для генерации QR-кода (например, ссылка на оплату)</div>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <input
+                        value={qrUrl}
+                        onChange={(e) => setQrUrl(e.target.value)}
+                        onBlur={() => { setQrUrlStorage(qrUrl); if (qrUrl) generateQrPreview(qrUrl); }}
+                        placeholder="https://example.com/pay"
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                    {qrPreview && (
+                      <div style={{ marginTop: 8, border: '1px solid var(--border)', borderRadius: 8, padding: 8, display: 'inline-block', background: 'white' }}>
+                        <img src={qrPreview} style={{ width: 100, height: 100 }} alt="QR-код" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
