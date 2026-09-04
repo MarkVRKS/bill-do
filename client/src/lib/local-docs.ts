@@ -53,37 +53,29 @@ export async function generateInvoiceHtml(invoiceId: string): Promise<string> {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Счёт №${invoice.number}</title>
 <style>
-body{font-family:'Times New Roman',serif;font-size:10.5pt;color:#000;line-height:1.25;padding:0;margin:0}
+body{font-family:'Times New Roman',serif;font-size:10.5pt;color:#000;line-height:1.25;padding:12mm 14mm;margin:0}
 table{border-collapse:collapse}
 td,th{padding:3px 5px}
-.doc-header{background:linear-gradient(135deg,#4a7c6f 0%,#5e9c8a 100%);color:#fff;padding:16px 20px;margin-bottom:16px}
-.doc-header h1{font-size:16pt;margin:0;color:#fff;font-weight:700}
-.doc-header .doc-subtitle{font-size:10pt;color:rgba(255,255,255,0.85);margin-top:4px}
-.doc-body{padding:0 14mm 12mm 14mm}
-.bank-block{border:1px solid #c8d6d0;margin-bottom:10px;font-size:9.5pt;line-height:1.3;border-radius:4px;overflow:hidden}
-.bank-block td{border:1px solid #c8d6d0;padding:4px 6px}
-.bank-block .bl{font-weight:normal;color:#555}
-.bank-block .bv,.bank-block .bacc{font-weight:bold}
+.bank-block{border:1px solid #000;margin-bottom:10px;font-size:9.5pt;line-height:1.3}
+.bank-block td{border:1px solid #000}
+.bl{font-weight:normal}.bv,.bacc{font-weight:bold}
 .party-row{display:flex;margin-bottom:4px;font-size:9.5pt}
-.party-label{font-weight:normal;min-width:100px;color:#555}
+.party-label{font-weight:normal;min-width:100px}
 .party-value{font-weight:bold}
-.basis-block{margin-bottom:8px;font-size:9.5pt;padding:6px 10px;background:#f0f5f3;border-left:3px solid #4a7c6f;border-radius:2px}
-.invoice-table{width:100%;border-collapse:collapse;font-size:9.5pt;border:2px solid #4a7c6f}
-.invoice-table th,.invoice-table td{border:1px solid #c8d6d0;padding:4px 6px}
-.invoice-table th{font-weight:bold;text-align:center;background:#4a7c6f;color:#fff}
+.basis-block{margin-bottom:8px;font-size:9.5pt}
+.invoice-table{width:100%;border-collapse:collapse;font-size:9.5pt;border:2px solid #000}
+.invoice-table th,.invoice-table td{border:1px solid #000;padding:4px 6px}
+.invoice-table th{font-weight:bold;text-align:center;background:#C5E9FF}
 .totals{text-align:right;margin-bottom:8px;font-size:9.5pt}
-.total-line{font-weight:bold;font-size:11pt;border-top:2px solid #4a7c6f;padding-top:4px;margin-top:4px;color:#4a7c6f}
-.words{margin:8px 0;font-size:9.5pt;padding:6px 10px;background:#f0f5f3;border-radius:2px}
+.total-line{font-weight:bold;font-size:11pt;border-top:1px solid #000;padding-top:4px;margin-top:4px}
+.words{margin:8px 0;font-size:9.5pt}
 .signatures{display:flex;justify-content:space-between;margin-top:18px;font-size:9.5pt}
 .sig-block{width:48%}
 .sig-line{display:flex;align-items:center;gap:6px;margin-top:22px}
 .sig-dash{flex:1;border-bottom:1px solid #000}
+h1{font-size:14pt;margin:0 0 10px}
 </style></head><body>
-<div class="doc-header">
-<h1>Счёт на оплату № ${esc(invoice.number)}</h1>
-<div class="doc-subtitle">от ${invoice.date?.split('-').reverse().join('.')} г.</div>
-</div>
-<div class="doc-body">
+<h1>Счёт на оплату № ${esc(invoice.number)} от ${invoice.date?.split('-').reverse().join('.')} г.</h1>
 <div class="bank-block"><table style="width:100%">
 <tr><td class="bl" style="width:18%">Банк получателя</td><td class="bacc" colspan="3">${esc(org?.bankName || '')}</td></tr>
 <tr><td class="bl">БИК</td><td class="bv">${esc(org?.bankBik || '')}</td><td class="bl">Сч. №</td><td class="bv">${esc(org?.bankCorr || '')}</td></tr>
@@ -108,7 +100,6 @@ ${invoice.vatType === 'none' ? '<p>Без налога (НДС): —</p>' : `<p>
 <div class="sig-block"><div>Руководитель</div><div class="sig-line"><span class="sig-dash"/><span>${esc(org?.director || '')}</span></div></div>
 <div class="sig-block"><div>Бухгалтер</div><div class="sig-line"><span class="sig-dash"/><span>${esc(org?.accountant || '')}</span></div></div>
 </div>
-</div></div>
 </body></html>`;
 }
 
@@ -126,27 +117,20 @@ export async function generateActHtml(invoiceId: string): Promise<string> {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Акт №${invoice.number}</title>
 <style>
-body{font-family:'Times New Roman',serif;font-size:10.5pt;color:#000;line-height:1.25;padding:0;margin:0}
+body{font-family:'Times New Roman',serif;font-size:10.5pt;color:#000;line-height:1.25;padding:12mm 14mm;margin:0}
 table{border-collapse:collapse;width:100%}
-td,th{padding:3px 5px;border:1px solid #c8d6d0}
-th{font-weight:bold;text-align:center;background:#4a7c6f;color:#fff}
-.doc-header{background:linear-gradient(135deg,#4a7c6f 0%,#5e9c8a 100%);color:#fff;padding:16px 20px;margin-bottom:16px}
-.doc-header h1{font-size:16pt;margin:0;color:#fff;font-weight:700;text-align:left}
-.doc-header .doc-subtitle{font-size:10pt;color:rgba(255,255,255,0.85);margin-top:4px}
-.doc-body{padding:0 14mm 12mm 14mm}
+td,th{padding:3px 5px;border:1px solid #000}
+th{font-weight:bold;text-align:center;background:#C5E9FF}
+h1{font-size:14pt;margin:0 0 10px;text-align:center}
 .info{margin-bottom:10px;font-size:9.5pt}
 .totals{text-align:right;margin:10px 0;font-size:9.5pt}
-.total-line{font-weight:bold;font-size:11pt;border-top:2px solid #4a7c6f;padding-top:4px;margin-top:4px;color:#4a7c6f}
+.total-line{font-weight:bold;font-size:11pt;border-top:1px solid #000;padding-top:4px;margin-top:4px}
 .signatures{display:flex;justify-content:space-between;margin-top:18px;font-size:9.5pt}
 .sig-block{width:48%}
 .sig-line{display:flex;align-items:center;gap:6px;margin-top:22px}
 .sig-dash{flex:1;border-bottom:1px solid #000}
 </style></head><body>
-<div class="doc-header">
-<h1>Акт оказанных услуг № ${esc(invoice.number)}</h1>
-<div class="doc-subtitle">от ${invoice.date?.split('-').reverse().join('.')} г.</div>
-</div>
-<div class="doc-body">
+<h1>Акт оказанных услуг № ${esc(invoice.number)} от ${invoice.date?.split('-').reverse().join('.')} г.</h1>
 <div class="info">Мы, нижеподписавшиеся, ${esc(org?.director || '')}, от имени ${esc(org?.name || '')}, с одной стороны, и ${cp ? esc(cp.name) : '—'}${cp?.address ? ', ' + esc(cp.address) : ''}, с другой стороны, составили настоящий акт о том, что за ${monthName} ${invoice.serviceYear} г. были оказаны следующие услуги:</div>
 <table>
 <thead><tr><th style="width:5%">№</th><th style="width:53%">Наименование</th><th style="width:7%">Кол-во</th><th style="width:7%">Ед.</th><th style="width:12%">Цена</th><th style="width:12%">Сумма</th></tr></thead>
@@ -158,7 +142,6 @@ th{font-weight:bold;text-align:center;background:#4a7c6f;color:#fff}
 <div class="sig-block"><div>Исполнитель</div><div class="sig-line"><span class="sig-dash"/><span>${esc(org?.director || '')}</span></div></div>
 <div class="sig-block"><div>Заказчик</div><div class="sig-line"><span class="sig-dash"/><span></span></div></div>
 </div>
-</div></div>
 </body></html>`;
 }
 
