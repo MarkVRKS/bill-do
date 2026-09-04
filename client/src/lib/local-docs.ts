@@ -65,7 +65,7 @@ td,th{padding:3px 5px}
 .basis-block{margin-bottom:8px;font-size:9.5pt}
 .invoice-table{width:100%;border-collapse:collapse;font-size:9.5pt;border:2px solid #000}
 .invoice-table th,.invoice-table td{border:1px solid #000;padding:4px 6px}
-.invoice-table th{font-weight:bold;text-align:center;background:#C5E9FF}
+.invoice-table th{font-weight:bold;text-align:center;background:#D6EDFF}
 .totals{text-align:right;margin-bottom:8px;font-size:9.5pt}
 .total-line{font-weight:bold;font-size:11pt;border-top:1px solid #000;padding-top:4px;margin-top:4px}
 .words{margin:8px 0;font-size:9.5pt}
@@ -117,30 +117,66 @@ export async function generateActHtml(invoiceId: string): Promise<string> {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Акт №${invoice.number}</title>
 <style>
-body{font-family:'Times New Roman',serif;font-size:10.5pt;color:#000;line-height:1.25;padding:12mm 14mm;margin:0}
+body{font-family:'Times New Roman',serif;font-size:11pt;color:#000;line-height:1.4;padding:15mm 20mm;margin:0}
 table{border-collapse:collapse;width:100%}
-td,th{padding:3px 5px;border:1px solid #000}
-th{font-weight:bold;text-align:center;background:#C5E9FF}
-h1{font-size:14pt;margin:0 0 10px;text-align:center}
-.info{margin-bottom:10px;font-size:9.5pt}
-.totals{text-align:right;margin:10px 0;font-size:9.5pt}
-.total-line{font-weight:bold;font-size:11pt;border-top:1px solid #000;padding-top:4px;margin-top:4px}
-.signatures{display:flex;justify-content:space-between;margin-top:18px;font-size:9.5pt}
-.sig-block{width:48%}
-.sig-line{display:flex;align-items:center;gap:6px;margin-top:22px}
-.sig-dash{flex:1;border-bottom:1px solid #000}
+td,th{padding:4px 6px;border:1px solid #000}
+th{font-weight:bold;text-align:center;background:#D6EDFF}
+.title{font-size:16pt;font-weight:bold;text-align:center;margin:0 0 4px}
+.subtitle{font-size:12pt;text-align:center;margin:0 0 16px}
+.parties{margin:0 0 14px;font-size:10.5pt;line-height:1.5}
+.parties b{font-weight:600}
+.table-wrap{margin:0 0 10px}
+.totals-wrap{display:flex;justify-content:flex-end;margin:0 0 10px}
+.totals-inner{text-align:right;font-size:10.5pt}
+.totals-inner p{margin:2px 0}
+.total-line{font-weight:bold;font-size:11pt;border-top:2px solid #000;padding-top:4px;margin-top:4px}
+.closing{margin:14px 0 0;font-size:10.5pt;line-height:1.5}
+.sig-row{display:flex;justify-content:space-between;margin-top:30px;font-size:10.5pt}
+.sig-col{width:45%}
+.sig-title{font-weight:bold;margin:0 0 4px}
+.sig-line-row{display:flex;align-items:baseline;gap:6px;margin-top:28px}
+.sig-label{white-space:nowrap}
+.sig-dash{flex:1;border-bottom:1px solid #000;min-width:100px}
+.sig-name{white-space:nowrap}
 </style></head><body>
-<h1>Акт оказанных услуг № ${esc(invoice.number)} от ${invoice.date?.split('-').reverse().join('.')} г.</h1>
-<div class="info">Мы, нижеподписавшиеся, ${esc(org?.director || '')}, от имени ${esc(org?.name || '')}, с одной стороны, и ${cp ? esc(cp.name) : '—'}${cp?.address ? ', ' + esc(cp.address) : ''}, с другой стороны, составили настоящий акт о том, что за ${monthName} ${invoice.serviceYear} г. были оказаны следующие услуги:</div>
+<div class="title">АКТ</div>
+<div class="subtitle">оказанных услуг № ${esc(invoice.number)} от ${invoice.date?.split('-').reverse().join('.')} г.</div>
+
+<div class="parties">
+${esc(org?.name || '')}${org?.director ? ', в лице ' + esc(org.director) : ''}${org?.inn ? ', ИНН ' + esc(org.inn) : ''}${org?.address ? ', ' + esc(org.address) : ''}, именуемое в дальнейшем <b>«Исполнитель»</b>, с одной стороны,
+и ${cp ? esc(cp.name) : '—'}${cp?.address ? ', ' + esc(cp.address) : ''}${cp?.inn ? ', ИНН ' + esc(cp.inn) : ''}, именуемое в дальнейшем <b>«Заказчик»</b>, с другой стороны,
+составили настоящий акт о том, что за <b>${monthName} ${invoice.serviceYear} г.</b> Исполнителем были оказаны следующие услуги:
+</div>
+
+<div class="table-wrap">
 <table>
-<thead><tr><th style="width:5%">№</th><th style="width:53%">Наименование</th><th style="width:7%">Кол-во</th><th style="width:7%">Ед.</th><th style="width:12%">Цена</th><th style="width:12%">Сумма</th></tr></thead>
+<thead><tr><th style="width:5%">№</th><th style="width:50%">Наименование услуги</th><th style="width:7%">Кол-во</th><th style="width:8%">Ед.</th><th style="width:14%">Цена</th><th style="width:16%">Сумма</th></tr></thead>
 <tbody>${positions.map((p: any, i: number) => `<tr><td style="text-align:center">${i + 1}</td><td>${esc(p.name)}</td><td style="text-align:center">${p.quantity}</td><td style="text-align:center">${esc(p.unit)}</td><td style="text-align:right">${fmt(p.price)}</td><td style="text-align:right">${fmt(p.amount)}</td></tr>`).join('')}</tbody>
 </table>
-<div class="totals"><p class="total-line">Итого: ${fmt(totalWithVat)} руб.</p></div>
-<div class="info">Вышеперечисленные услуги выполнены полностью и в срок. Заказчик претензий по объёму, качеству и срокам оказания услуг не имеет.</div>
-<div class="signatures">
-<div class="sig-block"><div>Исполнитель</div><div class="sig-line"><span class="sig-dash"/><span>${esc(org?.director || '')}</span></div></div>
-<div class="sig-block"><div>Заказчик</div><div class="sig-line"><span class="sig-dash"/><span></span></div></div>
+</div>
+
+<div class="totals-wrap"><div class="totals-inner">
+<p>Итого: ${fmt(totalWithVat)} руб.</p>
+<p class="total-line">Всего к оплате: ${fmt(totalWithVat)} руб.</p>
+</div></div>
+
+<div class="closing">
+Вышеперечисленные услуги выполнены полностью и в надлежащем качестве, в установленные сроки. Заказчик претензий по объёму, качеству и срокам оказания услуг не имеет.
+</div>
+
+<div class="sig-row">
+<div class="sig-col">
+<div class="sig-title">ИСПОЛНИТЕЛЬ</div>
+<div class="sig-line-row"><span class="sig-label">Подпись:</span><span class="sig-dash"></span></div>
+<div class="sig-line-row"><span class="sig-label">ФИО:</span><span class="sig-dash"><span class="sig-name">${esc(org?.director || '')}</span></span></div>
+<div class="sig-line-row"><span class="sig-label">М.П.</span></div>
+</div>
+<div class="sig-col">
+<div class="sig-title">ЗАКАЗЧИК</div>
+<div class="sig-line-row"><span class="sig-label">Подпись:</span><span class="sig-dash"></span></div>
+<div class="sig-line-row"><span class="sig-label">ФИО:</span><span class="sig-dash"></span></div>
+<div class="sig-line-row"><span class="sig-label">М.П.</span></div>
+</div>
 </div>
 </body></html>`;
 }

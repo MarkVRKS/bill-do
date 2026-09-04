@@ -310,6 +310,7 @@ export function SettingsPage() {
       const msg = parts.length > 0 ? `Импортировано: ${parts.join(', ')}` : 'Все данные уже есть в системе';
       const notif = showNotification('backup_loaded', msg);
       if (notif) showToast(notif.msg, notif.type); else showToast(msg);
+      window.dispatchEvent(new Event('billdo-data-changed'));
     } catch (err: any) {
       showToast(err.message || 'Ошибка импорта', 'error');
     }
@@ -390,12 +391,11 @@ export function SettingsPage() {
       const msg = parts.length > 0 ? `Импортировано: ${parts.join(', ')}` : 'Все данные уже есть в системе';
       const notif = showNotification('backup_loaded', msg);
       if (notif) showToast(notif.msg, notif.type); else showToast(msg);
+      window.dispatchEvent(new Event('billdo-data-changed'));
     } catch (err: any) {
       showToast(err.message || 'Ошибка импорта', 'error');
     }
-  }
-
-  const isLE = isLegalEntity(form.legalForm);
+  }  const isLE = isLegalEntity(form.legalForm);
   const isIPF = isIP(form.legalForm);
 
   return (
@@ -630,6 +630,25 @@ export function SettingsPage() {
                   boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                 }} />
               </button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header"><h3>Персонализация</h3></div>
+            <div style={{ padding: '0 4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, color: 'var(--text-secondary)', fontSize: 13 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                <span>Настройте внешний вид ваших документов</span>
+              </div>
+              <div style={{ background: 'var(--accent-light)', borderRadius: 12, padding: '16px 20px', border: '1px dashed var(--border-strong)' }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 8 }}>Скоро будет доступно:</div>
+                <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+                  <li>Логотип компании в документах (счёт, акт)</li>
+                  <li>QR-код для быстрой оплаты</li>
+                  <li>Печать на фирменном бланке</li>
+                  <li>Настройка цветов и шрифтов</li>
+                </ul>
+              </div>
             </div>
           </div>
 

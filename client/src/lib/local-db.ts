@@ -260,7 +260,7 @@ export async function invGetAll(params?: Record<string, string>) {
   if (params?.status) { wheres.push('i.status = ?'); values.push(params.status); }
   if (params?.search) { wheres.push('(i.number LIKE ? OR c.name LIKE ?)'); values.push(`%${params.search}%`, `%${params.search}%`); }
   if (wheres.length) sql += ' WHERE ' + wheres.join(' AND ');
-  sql += ' ORDER BY i.created_at DESC';
+  sql += ' ORDER BY i.date DESC, i.created_at DESC';
   const invoices = selectAll(sql, values).map(inv => {
     const m = mapInv(inv);
     m.counterpartyName = inv.cp_name || '';

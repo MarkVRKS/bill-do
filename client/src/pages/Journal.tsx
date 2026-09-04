@@ -112,8 +112,16 @@ export function JournalPage() {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') loadInvoices();
     };
+    const handleFocus = () => loadInvoices();
+    const handleBackupImport = () => loadInvoices();
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('billdo-data-changed', handleBackupImport);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('billdo-data-changed', handleBackupImport);
+    };
   }, [dateFrom, dateTo, statusFilter, search]);
 
   function handleSearch() { loadInvoices(); }
